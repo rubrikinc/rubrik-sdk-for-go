@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -19,7 +20,7 @@ type Connect struct {
 }
 
 // Consolidate the base API functions.
-func (c *Connect) commonAPI(callType, apiVersion, apiEndpoint string, timeout int) map[string]interface{} {
+func (c *Connect) commonAPI(callType, apiVersion, apiEndpoint string, config []byte, timeout int) map[string]interface{} {
 
 	if apiVersionValidation(apiVersion) == false {
 		log.SetFlags(0)
@@ -43,7 +44,17 @@ func (c *Connect) commonAPI(callType, apiVersion, apiEndpoint string, timeout in
 
 	requestURL := fmt.Sprintf("https://%s/api/%s%s", c.NodeIP, apiVersion, apiEndpoint)
 
-	request, err := http.NewRequest(callType, requestURL, nil)
+	var request *http.Request
+	switch callType {
+	case "GET":
+		request, _ = http.NewRequest(callType, requestURL, nil)
+	case "POST":
+		request, _ = http.NewRequest(callType, requestURL, bytes.NewBuffer(config))
+	case "PATCH":
+		request, _ = http.NewRequest(callType, requestURL, bytes.NewBuffer(config))
+	case "DELETE":
+		request, _ = http.NewRequest(callType, requestURL, nil)
+	}
 	request.SetBasicAuth(c.Username, c.Password)
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Accept", "application/json")
@@ -115,5 +126,30 @@ func (c *Connect) Get(apiVersion, apiEndpoint string, timeout ...int) map[string
 
 	httpTimeout := httpTimeout(timeout)
 
-	return c.commonAPI("GET", apiVersion, apiEndpoint, httpTimeout)
+	return c.commonAPI("GET", apiVersion, apiEndpoint, nil, httpTimeout)
+
+}
+
+// Post - Send a POST request to the provided Rubrik API endpoint.
+func (c *Connect) Post(apiVersion, apiEndpoint string, config []byte, timeout ...int) map[string]interface{} {
+
+	httpTimeout := httpTimeout(timeout)
+
+	return c.commonAPI("POST", apiVersion, apiEndpoint, config, httpTimeout)
+}
+
+// Patch - Send a PATCH request to the provided Rubrik API endpoint.
+func (c *Connect) Patch(apiVersion, apiEndpoint string, config []byte, timeout ...int) map[string]interface{} {
+
+	httpTimeout := httpTimeout(timeout)
+
+	return c.commonAPI("PATCH", apiVersion, apiEndpoint, config, httpTimeout)
+}
+
+// Delete - Send a DELETE request to the provided Rubrik API endpoint.
+func (c *Connect) Delete(apiVersion, apiEndpoint string, timeout ...int) map[string]interface{} {
+
+	httpTimeout := httpTimeout(timeout)
+
+	return c.commonAPI("DELETE", apiVersion, apiEndpoint, nil, httpTimeout)
 }
