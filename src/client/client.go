@@ -77,7 +77,14 @@ func (c *Connect) commonAPI(callType, apiVersion, apiEndpoint string, config map
 
 	if err := json.Unmarshal(apiResponse, &mapAPIResponse); err != nil {
 
-		panic(err)
+		// DELETE request will return a 204 No Content status
+		if apiRequest.StatusCode == 204 {
+			mapAPIResponse["statusCode"] = apiRequest.StatusCode
+		} else {
+			log.SetFlags(0)
+			log.Fatalf("Error: %s", apiRequest.Status)
+		}
+
 	}
 
 	for k := range mapAPIResponse {
