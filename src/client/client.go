@@ -12,7 +12,16 @@ import (
 	"time"
 )
 
-// Contains parameters used to authenticate against the Rubrik cluster
+// Type and Constants are used for escaping Get requests
+type encoding int
+
+const (
+	encodePath encoding = 1 + iota
+	encodePathSegment
+	encodeQueryComponent
+)
+
+// Connect - Contains parameters used to authenticate against the Rubrik cluster
 type Connect struct {
 	NodeIP   string
 	Username string
@@ -47,7 +56,7 @@ func (c *Connect) commonAPI(callType, apiVersion, apiEndpoint string, config map
 	var request *http.Request
 	switch callType {
 	case "GET":
-		request, _ = http.NewRequest(callType, requestURL, nil)
+		request, _ = http.NewRequest(callType, getEscape(requestURL), nil)
 	case "POST":
 		convertedConfig, _ := json.Marshal(config)
 		request, _ = http.NewRequest(callType, requestURL, bytes.NewBuffer(convertedConfig))
@@ -128,6 +137,70 @@ func httpTimeout(timeout []int) int {
 	}
 	return int(timeout[0]) // set the timeout value to the first value in the timeout slice
 
+}
+
+// Custom implementation of url.PathEscape
+func getEscape(s string) string {
+	return escape(s, encodePathSegment)
+}
+
+func escape(s string, mode encoding) string {
+	spaceCount, hexCount := 0, 0
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if shouldEscape(c, mode) {
+			if c == ' ' && mode == encodeQueryComponent {
+				spaceCount++
+			} else {
+				hexCount++
+			}
+		}
+	}
+
+	if spaceCount == 0 && hexCount == 0 {
+		return s
+	}
+
+	t := make([]byte, len(s)+2*hexCount)
+	j := 0
+	for i := 0; i < len(s); i++ {
+		switch c := s[i]; {
+		case c == ' ' && mode == encodeQueryComponent:
+			t[j] = '+'
+			j++
+		case shouldEscape(c, mode):
+			t[j] = '%'
+			t[j+1] = "0123456789ABCDEF"[c>>4]
+			t[j+2] = "0123456789ABCDEF"[c&15]
+			j += 3
+		default:
+			t[j] = s[i]
+			j++
+		}
+	}
+	return string(t)
+}
+
+func shouldEscape(c byte, mode encoding) bool {
+	// §2.3 Unreserved characters (alphanum)
+	if 'A' <= c && c <= 'Z' || 'a' <= c && c <= 'z' || '0' <= c && c <= '9' {
+		return false
+	}
+
+	switch c {
+	case '-', '_', '.', '~': // §2.3 Unreserved characters (mark)
+		return false
+
+	case '$', '&', '+', ',', '/', ':', ';', '=', '?', '@': // §2.2 Reserved characters (reserved)
+		// Different sections of the URL allow a few of
+		// the reserved characters to appear unescaped.
+
+		return c == ';' || c == ','
+
+	}
+
+	// Everything else must be escaped.
+	return true
 }
 
 // Get - Send a GET request to the provided Rubrik API endpoint.
