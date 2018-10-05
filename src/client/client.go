@@ -20,7 +20,7 @@ type Connect struct {
 }
 
 // Consolidate the base API functions.
-func (c *Connect) commonAPI(callType, apiVersion, apiEndpoint string, config []byte, timeout int) map[string]interface{} {
+func (c *Connect) commonAPI(callType, apiVersion, apiEndpoint string, config map[string]string, timeout int) map[string]interface{} {
 
 	if apiVersionValidation(apiVersion) == false {
 		log.SetFlags(0)
@@ -49,9 +49,11 @@ func (c *Connect) commonAPI(callType, apiVersion, apiEndpoint string, config []b
 	case "GET":
 		request, _ = http.NewRequest(callType, requestURL, nil)
 	case "POST":
-		request, _ = http.NewRequest(callType, requestURL, bytes.NewBuffer(config))
+		convertedConfig, _ := json.Marshal(config)
+		request, _ = http.NewRequest(callType, requestURL, bytes.NewBuffer(convertedConfig))
 	case "PATCH":
-		request, _ = http.NewRequest(callType, requestURL, bytes.NewBuffer(config))
+		convertedConfig, _ := json.Marshal(config)
+		request, _ = http.NewRequest(callType, requestURL, bytes.NewBuffer(convertedConfig))
 	case "DELETE":
 		request, _ = http.NewRequest(callType, requestURL, nil)
 	}
@@ -131,7 +133,7 @@ func (c *Connect) Get(apiVersion, apiEndpoint string, timeout ...int) map[string
 }
 
 // Post - Send a POST request to the provided Rubrik API endpoint.
-func (c *Connect) Post(apiVersion, apiEndpoint string, config []byte, timeout ...int) map[string]interface{} {
+func (c *Connect) Post(apiVersion, apiEndpoint string, config map[string]string, timeout ...int) map[string]interface{} {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -139,7 +141,7 @@ func (c *Connect) Post(apiVersion, apiEndpoint string, config []byte, timeout ..
 }
 
 // Patch - Send a PATCH request to the provided Rubrik API endpoint.
-func (c *Connect) Patch(apiVersion, apiEndpoint string, config []byte, timeout ...int) map[string]interface{} {
+func (c *Connect) Patch(apiVersion, apiEndpoint string, config map[string]string, timeout ...int) map[string]interface{} {
 
 	httpTimeout := httpTimeout(timeout)
 
