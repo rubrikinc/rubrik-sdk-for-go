@@ -43,6 +43,7 @@ func Connect(nodeIP, username, password string) *Credentials {
 // ConnectEnv initializes a new API client based on environment variables.
 func ConnectEnv() *Credentials {
 	log.SetFlags(0)
+
 	nodeIP, ok := os.LookupEnv("rubrik_cdm_node_ip")
 	if ok != true {
 		log.Fatalf("Error: The `rubrik_cdm_node_ip` environment variable is not present.")
@@ -68,13 +69,13 @@ func ConnectEnv() *Credentials {
 // Consolidate the base API functions.
 func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config map[string]string, timeout int) map[string]interface{} {
 
+	log.SetFlags(0)
+
 	if apiVersionValidation(apiVersion) == false {
-		log.SetFlags(0)
 		log.Fatalf("Error: Enter a valid API version.")
 	}
 
 	if endpointValidation(apiEndpoint) == "errorStart" {
-		log.SetFlags(0)
 		log.Fatalf("Error: The API Endpoint should begin with '/' (ex: /cluster/me).")
 	} else if endpointValidation(apiEndpoint) == "errorEnd" {
 		log.Fatal("Error: The API Endpoint should not end with '/' (ex. /cluster/me).")
@@ -109,7 +110,6 @@ func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config
 
 	apiRequest, err := client.Do(request)
 	if err, ok := err.(net.Error); ok && err.Timeout() {
-		log.SetFlags(0)
 		log.Fatalf("Error: Unable to establish a connection to the Rubrik cluster.")
 	} else if err != nil {
 		log.Fatal(err)
@@ -127,7 +127,6 @@ func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config
 		if apiRequest.StatusCode == 204 {
 			mapAPIResponse["statusCode"] = apiRequest.StatusCode
 		} else {
-			log.SetFlags(0)
 			log.Fatalf("Error: %s", apiRequest.Status)
 		}
 
@@ -135,7 +134,6 @@ func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config
 
 	for k := range mapAPIResponse {
 		if k == "errorType" || k == "message" {
-			log.SetFlags(0)
 			log.Fatalf("Error: %s", mapAPIResponse["message"])
 		}
 	}
