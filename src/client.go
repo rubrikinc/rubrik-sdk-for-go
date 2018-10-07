@@ -42,10 +42,19 @@ func Connect(nodeIP, username, password string) *Credentials {
 
 // ConnectEnv initializes a new API client based on environment variables.
 func ConnectEnv() *Credentials {
-
-	nodeIP := os.Getenv("rubrik_cdm_node_ip")
-	username := os.Getenv("rubrik_cdm_username")
-	password := os.Getenv("rubrik_cdm_password")
+	log.SetFlags(0)
+	nodeIP, ok := os.LookupEnv("rubrik_cdm_node_ip")
+	if ok != true {
+		log.Fatalf("Error: The `rubrik_cdm_node_ip` environment variable is not present.")
+	}
+	username, ok := os.LookupEnv("rubrik_cdm_username")
+	if ok != true {
+		log.Fatalf("Error: The `rubrik_cdm_username` environment variable is not present.")
+	}
+	password, ok := os.LookupEnv("rubrik_cdm_password")
+	if ok != true {
+		log.Fatalf("Error: The `rubrik_cdm_password` environment variable is not present.")
+	}
 
 	client := &Credentials{
 		NodeIP:   nodeIP,
@@ -130,7 +139,6 @@ func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config
 			log.Fatalf("Error: %s", mapAPIResponse["message"])
 		}
 	}
-
 	return mapAPIResponse
 
 }
