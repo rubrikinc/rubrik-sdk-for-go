@@ -5,22 +5,15 @@ Rubrik Cloud Data Management SDK for Go
 package main
 
 import (
-	"client"
 	"fmt"
-	"os"
+	"rubrik-sdk-for-go/src"
+
 )
 
 func main() {
 
-	nodeIP := os.Getenv("rubrik_cdm_node_ip")
-	username := os.Getenv("rubrik_cdm_username")
-	password := os.Getenv("rubrik_cdm_password")
-
-	rubrik := client.Connect{
-		NodeIP:   nodeIP,
-		Username: username,
-		Password: password,
-	}
+	rubrik := rubrikcdm.ConnectEnv()
+	
 	// GET
 	clusterVersion := rubrik.Get("v1", "/cluster/me")
 	fmt.Println(clusterVersion["version"])
