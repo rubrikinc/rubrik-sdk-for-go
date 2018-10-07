@@ -7,7 +7,6 @@ package main
 import (
 	"fmt"
 	"rubrik-sdk-for-go/src"
-
 )
 
 func main() {
