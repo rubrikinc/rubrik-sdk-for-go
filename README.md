@@ -6,7 +6,7 @@ package main
 
 import (
 	"fmt"
-	"rubrik-sdk-for-go/src"
+	"github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
 )
 
 func main() {
