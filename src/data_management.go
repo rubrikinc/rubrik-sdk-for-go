@@ -6,7 +6,7 @@ import (
 )
 
 // ObjectID will search the Rubrik cluster for the provided objectName and return its Id
-func (c *Credentials) ObjectID(objectType, objectName string, hostOS ...string) string {
+func (c *Credentials) ObjectID(objectName, objectType string, hostOS ...string) string {
 
 	validObjectType := map[string]bool{
 		"vmware":          true,
