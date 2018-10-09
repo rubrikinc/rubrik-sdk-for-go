@@ -42,7 +42,6 @@ func Connect(nodeIP, username, password string) *Credentials {
 
 // ConnectEnv initializes a new API client based on environment variables.
 func ConnectEnv() *Credentials {
-	log.SetFlags(0)
 
 	nodeIP, ok := os.LookupEnv("rubrik_cdm_node_ip")
 	if ok != true {
@@ -68,8 +67,6 @@ func ConnectEnv() *Credentials {
 
 // Consolidate the base API functions.
 func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config map[string]string, timeout int) map[string]interface{} {
-
-	log.SetFlags(0)
 
 	if apiVersionValidation(apiVersion) == false {
 		log.Fatalf("Error: Enter a valid API version.")
