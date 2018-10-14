@@ -18,3 +18,16 @@ func (c *Credentials) ClusterNodeIP() []string {
 
 	return nodeList
 }
+
+// ClusterNodeName returns the name of all nodes in the Rubrik cluster
+func (c *Credentials) ClusterNodeName() []string {
+	apiRequest := c.Get("internal", "/cluster/me/node")
+
+	var nodeName []string
+
+	for _, v := range apiRequest["data"].([]interface{}) {
+		nodeName = append(nodeName, v.(interface{}).(map[string]interface{})["id"].(string))
+	}
+
+	return nodeName
+}
