@@ -66,7 +66,7 @@ func ConnectEnv() *Credentials {
 }
 
 // Consolidate the base API functions.
-func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config map[string]string, timeout int) map[string]interface{} {
+func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config interface{}, timeout int) interface{} {
 
 	if apiVersionValidation(apiVersion) == false {
 		log.Fatalf("Error: Enter a valid API version.")
@@ -116,25 +116,20 @@ func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config
 
 	apiResponse := []byte(body)
 
-	mapAPIResponse := map[string]interface{}{}
+	var convertedAPIResponse interface{}
 
-	if err := json.Unmarshal(apiResponse, &mapAPIResponse); err != nil {
+	if err := json.Unmarshal(apiResponse, &convertedAPIResponse); err != nil {
 
 		// DELETE request will return a 204 No Content status
 		if apiRequest.StatusCode == 204 {
-			mapAPIResponse["statusCode"] = apiRequest.StatusCode
-		} else {
+			convertedAPIResponse = map[string]interface{}{}
+			convertedAPIResponse.(map[string]interface{})["statusCode"] = apiRequest.StatusCode
+		} else if apiRequest.StatusCode != 200 {
 			log.Fatalf("Error: %s", apiRequest.Status)
 		}
-
 	}
 
-	for k := range mapAPIResponse {
-		if k == "errorType" || k == "message" {
-			log.Fatalf("Error: %s", mapAPIResponse["message"])
-		}
-	}
-	return mapAPIResponse
+	return convertedAPIResponse
 
 }
 
@@ -235,7 +230,7 @@ func shouldEscape(c byte, mode encoding) bool {
 }
 
 // Get - Send a GET request to the provided Rubrik API endpoint.
-func (c *Credentials) Get(apiVersion, apiEndpoint string, timeout ...int) map[string]interface{} {
+func (c *Credentials) Get(apiVersion, apiEndpoint string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -244,7 +239,7 @@ func (c *Credentials) Get(apiVersion, apiEndpoint string, timeout ...int) map[st
 }
 
 // Post - Send a POST request to the provided Rubrik API endpoint.
-func (c *Credentials) Post(apiVersion, apiEndpoint string, config map[string]string, timeout ...int) map[string]interface{} {
+func (c *Credentials) Post(apiVersion, apiEndpoint string, config interface{}, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -252,7 +247,7 @@ func (c *Credentials) Post(apiVersion, apiEndpoint string, config map[string]str
 }
 
 // Patch - Send a PATCH request to the provided Rubrik API endpoint.
-func (c *Credentials) Patch(apiVersion, apiEndpoint string, config map[string]string, timeout ...int) map[string]interface{} {
+func (c *Credentials) Patch(apiVersion, apiEndpoint string, config interface{}, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -260,7 +255,7 @@ func (c *Credentials) Patch(apiVersion, apiEndpoint string, config map[string]st
 }
 
 // Delete - Send a DELETE request to the provided Rubrik API endpoint.
-func (c *Credentials) Delete(apiVersion, apiEndpoint string, timeout ...int) map[string]interface{} {
+func (c *Credentials) Delete(apiVersion, apiEndpoint string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
 

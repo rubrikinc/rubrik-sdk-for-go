@@ -56,7 +56,7 @@ func (c *Credentials) ObjectID(objectName, objectType string, hostOS ...string) 
 		objectSummaryAPIEndpoint = fmt.Sprintf("/managed_volume?is_relic=false&primary_cluster_id=local&name=%s", objectName)
 	}
 
-	apiRequest := c.Get(objectSummaryAPIVersion, objectSummaryAPIEndpoint)
+	apiRequest := c.Get(objectSummaryAPIVersion, objectSummaryAPIEndpoint).(map[string]interface{})
 	if apiRequest["total"] == 0 {
 		log.Fatalf(fmt.Sprintf("Error: The %s object '%s' was not found on the Rubrik cluster.", objectType, objectName))
 	} else if apiRequest["total"].(float64) > 0 {
