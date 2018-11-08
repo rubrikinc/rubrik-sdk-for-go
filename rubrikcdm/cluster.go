@@ -3,12 +3,22 @@ package rubrikcdm
 import (
 	"fmt"
 	"log"
+	"strconv"
 )
 
 // ClusterVersion returns the CDM version of the Rubrik cluster
-func (c *Credentials) ClusterVersion() interface{} {
+func (c *Credentials) ClusterVersion() string {
 	apiRequest := c.Get("v1", "/cluster/me")
-	return apiRequest.(map[string]interface{})["version"]
+	return apiRequest.(map[string]interface{})["version"].(string)
+}
+
+// ClusterVersionCheck will return an error message if the current CDM Cluster version is less than the provided clusterVersion parameter.
+func (c *Credentials) ClusterVersionCheck(clusterVersion float64) {
+	currentClusterVersion, _ := strconv.ParseFloat(c.ClusterVersion()[:3], 2)
+
+	if currentClusterVersion < clusterVersion {
+		log.Fatalf(fmt.Sprintf("Error: The Rubrik cluster must be running CDM version %.1f or later.", clusterVersion))
+	}
 }
 
 // ClusterNodeIP returns a slice of all Node IPs in the Rubrik cluster
