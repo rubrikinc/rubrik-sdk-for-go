@@ -18,11 +18,11 @@ func (c *Credentials) ObjectID(objectName, objectType string, hostOS ...string) 
 	}
 
 	if validObjectType[objectType] == false {
-		log.Fatalf("Error: The `objectType` must be `vmware`, `sla`, `vmwareHost`, `physicalHost`, `filesetTemplate`, or `managedVolume`.")
+		log.Fatalf("Error: The 'objectType' must be 'vmware', 'sla', 'vmwareHost', 'physicalHost', 'filesetTemplate', or 'managedVolume'.")
 	}
+
 	var objectSummaryAPIVersion string
 	var objectSummaryAPIEndpoint string
-
 	switch objectType {
 	case "vmware":
 		objectSummaryAPIVersion = "v1"
@@ -87,4 +87,52 @@ func (c *Credentials) ObjectID(objectName, objectType string, hostOS ...string) 
 	log.Fatalf(fmt.Sprintf("Error: The %s object '%s' was not found on the Rubrik cluster.", objectType, objectName))
 	return ""
 
+}
+
+// AssignSLA
+func (c *Credentials) AssignSLA(objectName, objectType, slaName string, timeout ...int) interface{} {
+
+	httpTimeout := httpTimeout(timeout)
+
+	validObjectType := map[string]bool{
+		"vmware": true,
+	}
+
+	if validObjectType[objectType] == false {
+		log.Fatalf("Error: The 'objectType' must be 'vmware'.")
+	}
+
+	var slaID string
+	switch slaName {
+	case "do not protect":
+		slaID = "UNPROTECTED"
+	case "clear":
+		slaID = "INHERIT"
+	default:
+		slaID = c.ObjectID(slaName, "sla")
+	}
+
+	config := map[string]interface{}{}
+	switch objectType {
+	case "vmware":
+		vmID := c.ObjectID(objectName, "vmware")
+
+		vmSummary := c.Get("v1", fmt.Sprintf("/vmware/vm/%s", vmID), httpTimeout)
+
+		var currentSLAID string
+		switch slaID {
+		case "INHERIT":
+			currentSLAID = vmSummary.(map[string]interface{})["configuredSlaDomainId"].(string)
+		default:
+			currentSLAID = vmSummary.(map[string]interface{})["effectiveSlaDomainId"].(string)
+		}
+
+		if slaID == currentSLAID {
+			return fmt.Sprintf("No change required. The vSphere VM '%s' is already assigned to the '%s' SLA Domain.", objectName, slaName)
+		}
+
+		config["managedIds"] = []string{vmID}
+	}
+
+	return c.Post("internal", fmt.Sprintf("/sla_domain/%s/assign", slaID), config, httpTimeout)
 }
