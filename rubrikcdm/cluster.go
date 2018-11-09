@@ -3,6 +3,7 @@ package rubrikcdm
 import (
 	"fmt"
 	"log"
+	"reflect"
 	"strconv"
 )
 
@@ -236,5 +237,110 @@ func (c *Credentials) ConfigureSyslog(syslogIP, protocol string, port float64, t
 
 	}
 	return c.Post("internal", "/syslog", config, httpTimeout)
+
+}
+
+// ConfigureDNSServers
+func (c *Credentials) ConfigureDNSServers(serverIP []string, timeout ...int) interface{} {
+
+	httpTimeout := httpTimeout(timeout)
+
+	currentDNSServers := c.Get("internal", "/cluster/me/dns_nameserver", httpTimeout).(map[string]interface{})["data"].([]interface{})
+
+	if stringEq(serverIP, currentDNSServers) {
+		return "No change required. The Rubrik cluster is already configured with the provided DNS servers."
+	}
+
+	return c.Post("internal", "/cluster/me/dns_nameserver", serverIP, httpTimeout)
+
+}
+
+// ConfigureSearchDomain
+func (c *Credentials) ConfigureSearchDomain(searchDomain []string, timeout ...int) interface{} {
+
+	httpTimeout := httpTimeout(timeout)
+
+	currentSearchDomains := c.Get("internal", "/cluster/me/dns_search_domain", httpTimeout).(map[string]interface{})["data"].([]interface{})
+
+	if stringEq(searchDomain, currentSearchDomains) {
+		return "No change required. The Rubrik cluster is already configured with the provided DNS servers."
+	}
+
+	return c.Post("internal", "/cluster/me/dns_search_domain", searchDomain, httpTimeout)
+
+}
+
+// ConfigureSMTPSettings
+func (c *Credentials) ConfigureSMTPSettings(hostname, fromEmail, smtpUsername, smtpPassword, encryption string, port int, timeout ...int) interface{} {
+
+	httpTimeout := httpTimeout(timeout)
+
+	validEncryption := map[string]bool{
+		"NONE":     true,
+		"SSL":      true,
+		"STARTTLS": true,
+	}
+
+	if validEncryption[encryption] == false {
+		log.Fatalf("Error: The 'encryption' must be 'NONE', 'SSL' or 'STARTTLS'.")
+	}
+
+	config := map[string]interface{}{}
+	config["smtpSecurity"] = encryption
+	config["smtpHostname"] = hostname
+	config["smtpPort"] = port
+	config["smtpUsername"] = smtpUsername
+	config["fromEmailId"] = fromEmail
+
+	getSMTPSettings := c.Get("internal", "/smtp_instance", httpTimeout)
+
+	if getSMTPSettings.(map[string]interface{})["total"] == float64(0) {
+		config["smtpPassword"] = smtpPassword
+		return c.Post("internal", "/smtp_instance", config, httpTimeout)
+	}
+
+	currentSMTPSettings := getSMTPSettings.(map[string]interface{})["data"].([]interface{})[0]
+
+	smtpID := currentSMTPSettings.(map[string]interface{})["id"]
+	delete(currentSMTPSettings.(map[string]interface{}), "id")
+	// Convert the smtpPort to int for comparison
+	currentSMTPSettings.(map[string]interface{})["smtpPort"] = int(currentSMTPSettings.(map[string]interface{})["smtpPort"].(float64))
+
+	checkConfig := reflect.DeepEqual(config, currentSMTPSettings)
+	if checkConfig {
+		return fmt.Sprintf("No change required. The Rubrik cluster is already configured with the provided SMTP settings.")
+	}
+
+	return c.Patch("internal", fmt.Sprintf("/smtp_instance/%s", smtpID), config, httpTimeout)
+}
+
+// ConfigureVLAN
+func (c *Credentials) ConfigureVLAN(netmask string, vlan int, ips map[string]string, timeout ...int) interface{} {
+
+	httpTimeout := httpTimeout(timeout)
+
+	config := map[string]interface{}{}
+	config["vlan"] = vlan
+	config["netmask"] = netmask
+	nodeIPInterfaces := []interface{}{}
+	for k, v := range ips {
+		nodeIPInterfaces = append(nodeIPInterfaces, map[string]interface{}{"node": k, "ip": v})
+	}
+	config["interfaces"] = nodeIPInterfaces
+
+	getCurrentVLANs := c.Get("internal", "/cluster/me/vlan", httpTimeout)
+
+	if getCurrentVLANs.(map[string]interface{})["total"] != float64(0) {
+		currentVLANs := getCurrentVLANs.(map[string]interface{})["data"].([]interface{})[0]
+		// Convert int from float64 to int
+		currentVLANs.((map[string]interface{}))["vlan"] = int(currentVLANs.((map[string]interface{}))["vlan"].(float64))
+
+		checkConfig := reflect.DeepEqual(config, currentVLANs)
+		if checkConfig {
+			return "No change required. The Rubrik cluster is already configured with the provided VLAN information."
+		}
+
+	}
+	return c.Post("internal", "/cluster/me/vlan", config, httpTimeout)
 
 }
