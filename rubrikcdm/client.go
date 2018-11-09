@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sort"
 	"time"
 )
 
@@ -260,4 +261,34 @@ func (c *Credentials) Delete(apiVersion, apiEndpoint string, timeout ...int) int
 	httpTimeout := httpTimeout(timeout)
 
 	return c.commonAPI("DELETE", apiVersion, apiEndpoint, nil, httpTimeout)
+}
+
+// stringEq converts b to[]string, sorts the two []string, and checks for equality
+func stringEq(a []string, b []interface{}) bool {
+
+	// Convert []interface {} to []string
+	c := make([]string, len(b))
+	for i, v := range b {
+		c[i] = fmt.Sprint(v)
+	}
+
+	sort.Strings(a)
+	sort.Strings(c)
+
+	// If one is nil, the other must also be nil.
+	if (a == nil) != (c == nil) {
+		return false
+	}
+
+	if len(a) != len(c) {
+		return false
+	}
+
+	for i := range a {
+		if a[i] != c[i] {
+			return false
+		}
+	}
+
+	return true
 }
