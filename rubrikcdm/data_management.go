@@ -136,3 +136,164 @@ func (c *Credentials) AssignSLA(objectName, objectType, slaName string, timeout 
 
 	return c.Post("internal", fmt.Sprintf("/sla_domain/%s/assign", slaID), config, httpTimeout)
 }
+
+// BeginManagedVolumeSnapshot
+func (c *Credentials) BeginManagedVolumeSnapshot(name string, timeout ...int) interface{} {
+
+	httpTimeout := httpTimeout(timeout)
+
+	managedVolumeID := c.ObjectID(name, "managedVolume")
+
+	managedVolumeSummary := c.Get("internal", fmt.Sprintf("/managed_volume/%s", managedVolumeID), httpTimeout)
+
+	if managedVolumeSummary.(map[string]interface{})["isWritable"].(bool) {
+
+		return fmt.Sprintf("No change required. The Managed Volume '%s' is already in a writeable state.", name)
+	}
+
+	config := map[string]string{}
+
+	return c.Post("internal", fmt.Sprintf("/managed_volume/%s/begin_snapshot", managedVolumeID), config, httpTimeout)
+
+}
+
+// EndManagedVolumeSnapshot
+func (c *Credentials) EndManagedVolumeSnapshot(name, slaName string, timeout ...int) interface{} {
+
+	httpTimeout := httpTimeout(timeout)
+
+	managedVolumeID := c.ObjectID(name, "managedVolume")
+
+	managedVolumeSummary := c.Get("internal", fmt.Sprintf("/managed_volume/%s", managedVolumeID), httpTimeout)
+
+	if managedVolumeSummary.(map[string]interface{})["isWritable"].(bool) == false {
+
+		return fmt.Sprintf("No change required. The Managed Volume '%s' is already in a read-only state.", name)
+	}
+
+	var slaID string
+	switch slaName {
+	case "current":
+		slaID = managedVolumeSummary.(map[string]interface{})["configuredSlaDomainId"].(string)
+	default:
+		slaID = c.ObjectID(slaName, "sla")
+	}
+
+	config := map[string]interface{}{}
+	config["retentionConfig"] = map[string]interface{}{}
+	config["retentionConfig"].(map[string]interface{})["slaId"] = slaID
+
+	return c.Post("internal", fmt.Sprintf("/managed_volume/%s/end_snapshot", managedVolumeID), config, httpTimeout)
+
+}
+
+// GetSLAObjects
+func (c *Credentials) GetSLAObjects(slaName, objectType string, timeout ...int) interface{} {
+
+	httpTimeout := httpTimeout(timeout)
+
+	validObjectType := map[string]bool{
+		"vmware": true,
+	}
+
+	if validObjectType[objectType] == false {
+		log.Fatalf("Error: The 'objectType' must be 'vmware'")
+	}
+
+	switch objectType {
+	case "vmware":
+		slaID := c.ObjectID(slaName, "sla")
+
+		allVMinSLA := c.Get("v1", fmt.Sprintf("/vmware/vm?effective_sla_domain_id=%s&is_relic=false", slaID), httpTimeout).(map[string]interface{})
+
+		if allVMinSLA["total"].(float64) == 0 {
+			return fmt.Sprintf("The SLA '%s' is currently not protecting any %s objects.", slaName, objectType)
+		}
+
+		vmNameID := map[interface{}]interface{}{}
+		for _, v := range allVMinSLA["data"].([]interface{}) {
+			vmNameID[v.(map[string]interface{})["name"]] = v.(map[string]interface{})["id"]
+		}
+
+		return vmNameID
+
+	}
+
+	return ""
+}
+
+// PauseSnapshot
+func (c *Credentials) PauseSnapshot(objectName, objectType string, timeout ...int) interface{} {
+
+	httpTimeout := httpTimeout(timeout)
+
+	// Change the default to 180
+	if httpTimeout == 15 {
+		httpTimeout = 180
+	}
+
+	validObjectType := map[string]bool{
+		"vmware": true,
+	}
+
+	if validObjectType[objectType] == false {
+		log.Fatalf("Error: The 'objectType' must be 'vmware'")
+	}
+
+	switch objectType {
+	case "vmware":
+		vmID := c.ObjectID(objectName, "vmware")
+
+		vmSummary := c.Get("v1", fmt.Sprintf("/vmware/vm/%s", vmID), httpTimeout).(map[string]interface{})
+
+		if vmSummary["blackoutWindowStatus"].(map[string]interface{})["isSnappableBlackoutActive"].(bool) {
+			return fmt.Sprintf("No change required. The '%s' '%s' is already paused.", objectName, objectType)
+		}
+
+		config := map[string]bool{}
+		config["isVmPaused"] = true
+
+		return c.Patch("v1", fmt.Sprintf("/vmware/vm/%s", vmID), config, httpTimeout)
+
+	}
+
+	return ""
+}
+
+// ResumeSnapshot
+func (c *Credentials) ResumeSnapshot(objectName, objectType string, timeout ...int) interface{} {
+
+	httpTimeout := httpTimeout(timeout)
+
+	// Change the default to 180
+	if httpTimeout == 15 {
+		httpTimeout = 180
+	}
+
+	validObjectType := map[string]bool{
+		"vmware": true,
+	}
+
+	if validObjectType[objectType] == false {
+		log.Fatalf("Error: The 'objectType' must be 'vmware'")
+	}
+
+	switch objectType {
+	case "vmware":
+		vmID := c.ObjectID(objectName, "vmware")
+
+		vmSummary := c.Get("v1", fmt.Sprintf("/vmware/vm/%s", vmID), httpTimeout).(map[string]interface{})
+
+		if vmSummary["blackoutWindowStatus"].(map[string]interface{})["isSnappableBlackoutActive"].(bool) == false {
+			return fmt.Sprintf("No change required. The '%s' '%s' is currently not paused.", objectName, objectType)
+		}
+
+		config := map[string]bool{}
+		config["isVmPaused"] = false
+
+		return c.Patch("v1", fmt.Sprintf("/vmware/vm/%s", vmID), config, httpTimeout)
+
+	}
+
+	return ""
+}

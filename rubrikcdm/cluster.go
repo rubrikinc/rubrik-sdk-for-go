@@ -344,3 +344,60 @@ func (c *Credentials) ConfigureVLAN(netmask string, vlan int, ips map[string]str
 	return c.Post("internal", "/cluster/me/vlan", config, httpTimeout)
 
 }
+
+// AddvCenter
+func (c *Credentials) AddvCenter(vCenterIP, vCenterUsername, vCenterPassword string, vmLinking bool, timeout ...int) interface{} {
+
+	httpTimeout := httpTimeout(timeout)
+
+	currentVCenter := c.Get("v1", "/vmware/vcenter?primary_cluster_id=local", httpTimeout).(map[string]interface{})
+
+	for _, v := range currentVCenter["data"].([]interface{}) {
+
+		if v.(interface{}).(map[string]interface{})["hostname"].(string) == vCenterIP {
+			return fmt.Sprintf("No change required. The vCenter '%s' has already been added to the Rubrik cluster.", vCenterIP)
+		}
+	}
+
+	config := map[string]string{}
+	config["hostname"] = vCenterIP
+	config["username"] = vCenterUsername
+	config["password"] = vCenterPassword
+	if vmLinking {
+		config["conflictResolutionAuthz"] = "AllowAutoConflictResolution"
+	} else if vmLinking == false {
+		config["conflictResolutionAuthz"] = "NoConflictResolution"
+	}
+
+	return c.Post("v1", "/vmware/vcenter", config, httpTimeout)
+
+}
+
+// AddvCenterWithCert
+func (c *Credentials) AddvCenterWithCert(vCenterIP, vCenterUsername, vCenterPassword, caCertificate string, vmLinking bool, timeout ...int) interface{} {
+
+	httpTimeout := httpTimeout(timeout)
+
+	currentVCenter := c.Get("v1", "/vmware/vcenter?primary_cluster_id=local", httpTimeout).(map[string]interface{})
+
+	for _, v := range currentVCenter["data"].([]interface{}) {
+
+		if v.(interface{}).(map[string]interface{})["hostname"].(string) == vCenterIP {
+			return fmt.Sprintf("No change required. The vCenter '%s' has already been added to the Rubrik cluster.", vCenterIP)
+		}
+	}
+
+	config := map[string]string{}
+	config["hostname"] = vCenterIP
+	config["username"] = vCenterUsername
+	config["password"] = vCenterPassword
+	if vmLinking {
+		config["conflictResolutionAuthz"] = "AllowAutoConflictResolution"
+	} else if vmLinking == false {
+		config["conflictResolutionAuthz"] = "NoConflictResolution"
+	}
+	config["caCerts"] = caCertificate
+
+	return c.Post("v1", "/vmware/vcenter", config, httpTimeout)
+
+}
