@@ -136,7 +136,7 @@ func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config
 
 // Validate the API Version provided in the Base API functions
 func apiVersionValidation(apiVersion string) bool {
-	validAPIVersions := []string{"v1", "internal"}
+	validAPIVersions := []string{"v1", "v2", "internal"}
 
 	for _, version := range validAPIVersions {
 		if version == apiVersion {
