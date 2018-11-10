@@ -128,6 +128,15 @@ func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config
 		} else if apiRequest.StatusCode != 200 {
 			log.Fatalf("Error: %s", apiRequest.Status)
 		}
+
+	}
+
+	if _, ok := convertedAPIResponse.(map[string]interface{})["errorType"]; ok {
+		log.Fatalf("Error: %s", convertedAPIResponse.(map[string]interface{})["message"])
+	}
+
+	if _, ok := convertedAPIResponse.(map[string]interface{})["message"]; ok {
+		log.Fatalf("Error: %s", convertedAPIResponse.(map[string]interface{})["message"])
 	}
 
 	return convertedAPIResponse
