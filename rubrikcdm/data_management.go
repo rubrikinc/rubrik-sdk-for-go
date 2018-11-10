@@ -33,6 +33,10 @@ func (c *Credentials) ObjectID(objectName, objectType string, hostOS ...string) 
 	case "vmwareHost":
 		objectSummaryAPIVersion = "v1"
 		objectSummaryAPIEndpoint = "/vmware/host?primary_cluster_id=local"
+	case "physicalHost":
+
+		objectSummaryAPIVersion = "v1"
+		objectSummaryAPIEndpoint = fmt.Sprintf("/host?primary_cluster_id=local&hostname=%s", objectName)
 	case "filesetTemplate":
 		var hostOperatingSystem string
 		if len(hostOS) > 0 {
@@ -296,4 +300,90 @@ func (c *Credentials) ResumeSnapshot(objectName, objectType string, timeout ...i
 	}
 
 	return ""
+}
+
+// OnDemandSnapshotVM
+func (c *Credentials) OnDemandSnapshotVM(objectName, objectType, slaName string, timeout ...int) string {
+
+	httpTimeout := httpTimeout(timeout)
+
+	// Change the default to 180
+	if httpTimeout == 15 {
+		httpTimeout = 180
+	}
+
+	validObjectType := map[string]bool{
+		"vmware": true,
+	}
+
+	if validObjectType[objectType] == false {
+		log.Fatalf("Error: The 'objectType' must be 'vmware'")
+	}
+
+	switch objectType {
+	case "vmware":
+		vmID := c.ObjectID(objectName, "vmware")
+
+		var slaID string
+		switch slaName {
+		case "current":
+			slaID = c.Get("v1", fmt.Sprintf("/vmware/vm/%s", vmID)).(map[string]interface{})["effectiveSlaDomainId"].(string)
+		default:
+			slaID = c.ObjectID(slaName, "sla")
+		}
+
+		config := map[string]string{}
+		config["slaId"] = slaID
+
+		return c.Post("v1", fmt.Sprintf("/vmware/vm/%s/snapshot", vmID), config, httpTimeout).(map[string]interface{})["links"].([]interface{})[0].(map[string]interface{})["href"].(string)
+
+	}
+
+	return ""
+}
+
+// OnDemandSnapshotPhysicalHost
+func (c *Credentials) OnDemandSnapshotPhysical(hostName, slaName, fileset, hostOS string, timeout ...int) string {
+
+	httpTimeout := httpTimeout(timeout)
+
+	// Change the default to 180
+	if httpTimeout == 15 {
+		httpTimeout = 180
+	}
+
+	validHostOs := map[string]bool{
+		"Linux":   true,
+		"Windows": true,
+	}
+
+	if validHostOs[hostOS] == false {
+		log.Fatalf("Error: The 'hostOS' must be 'Linux' or 'Windows.")
+	}
+
+	hostID := c.ObjectID(hostName, "physicalHost")
+
+	filesetTemplateID := c.ObjectID(fileset, "filesetTemplate", hostOS)
+
+	filesetSummary := c.Get("v1", fmt.Sprintf("/fileset?primary_cluster_id=local&host_id=%s&is_relic=false&template_id=%s", hostID, filesetTemplateID)).(map[string]interface{})
+
+	if filesetSummary["total"] == 0 {
+		log.Fatalf(fmt.Sprintf("Error: The Physical Host '%s' is not assigned to the '%s' Fileset.", hostName, fileset))
+	}
+
+	filesetID := filesetSummary["data"].([]interface{})[0].(map[string]interface{})["id"].(string)
+
+	var slaID string
+	switch slaName {
+	case "current":
+		slaID = filesetSummary["data"].([]interface{})[0].(map[string]interface{})["effectiveSlaDomainId"].(string)
+	default:
+		slaID = c.ObjectID(slaName, "sla")
+
+	}
+
+	config := map[string]string{}
+	config["slaId"] = slaID
+
+	return c.Post("v1", fmt.Sprintf("/fileset/%s/snapshot", filesetID), config, httpTimeout).(map[string]interface{})["links"].([]interface{})[0].(map[string]interface{})["href"].(string)
 }
