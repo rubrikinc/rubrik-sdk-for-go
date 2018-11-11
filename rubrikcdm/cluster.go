@@ -5,15 +5,18 @@ import (
 	"log"
 	"reflect"
 	"strconv"
+	"time"
 )
 
-// ClusterVersion returns the CDM version of the Rubrik cluster
+// ClusterVersion returns the CDM version of the Rubrik cluster.
 func (c *Credentials) ClusterVersion() string {
 	apiRequest := c.Get("v1", "/cluster/me")
 	return apiRequest.(map[string]interface{})["version"].(string)
 }
 
-// ClusterVersionCheck will return an error message if the current CDM Cluster version is less than the provided clusterVersion parameter.
+// ClusterVersionCheck returns the following message and then exits if the current CDM version
+// is less than the provided clusterVersion parameter.
+//	Error: The Rubrik cluster must be running CDM version {clusterVersion} or later.
 func (c *Credentials) ClusterVersionCheck(clusterVersion float64) {
 	currentClusterVersion, _ := strconv.ParseFloat(c.ClusterVersion()[:3], 2)
 
@@ -22,7 +25,7 @@ func (c *Credentials) ClusterVersionCheck(clusterVersion float64) {
 	}
 }
 
-// ClusterNodeIP returns a slice of all Node IPs in the Rubrik cluster
+// ClusterNodeIP returns all Node IPs in the Rubrik cluster.
 func (c *Credentials) ClusterNodeIP() []string {
 	apiRequest := c.Get("internal", "/cluster/me/node").(map[string]interface{})
 
@@ -35,7 +38,7 @@ func (c *Credentials) ClusterNodeIP() []string {
 	return nodeList
 }
 
-//ClusterNodeName returns the name of all nodes in the Rubrik cluster
+// ClusterNodeName returns the name of all nodes in the Rubrik cluster.
 func (c *Credentials) ClusterNodeName() []string {
 	apiRequest := c.Get("internal", "/cluster/me/node").(map[string]interface{})
 
@@ -94,12 +97,14 @@ func (c *Credentials) EndUserAuthorization(objectName, endUser, objectType strin
 }
 
 // ConfigureTimezone provides the ability to set the time zone that is used by the Rubrik cluster which uses the specified
-// time zone for time values in the web UI, all reports, SLA Domain settings, and all other time related operations. Valid timezone
-// choices include: 'America/Anchorage', 'America/Araguaina', 'America/Barbados', 'America/Chicago', 'America/Denver', 'America/Los_Angeles'
-// 'America/Mexico_City', 'America/New_York', 'America/Noronha', 'America/Phoenix', 'America/Toronto', 'America/Vancouver', 'Asia/Bangkok',
-// 'Asia/Dhaka', 'Asia/Dubai', 'Asia/Hong_Kong', 'Asia/Karachi', 'Asia/Kathmandu', 'Asia/Kolkata', 'Asia/Magadan', 'Asia/Singapore',
-// 'Asia/Tokyo', 'Atlantic/Cape_Verde', 'Australia/Perth', 'Australia/Sydney', 'Europe/Amsterdam', 'Europe/Athens', 'Europe/London',
-// 'Europe/Moscow', 'Pacific/Auckland', 'Pacific/Honolulu', 'Pacific/Midway', or 'UTC'.
+// time zone for time values in the web UI, all reports, SLA Domain settings, and all other time related operations.
+//
+// Valid timezone choices are:
+//
+// 	America/Anchorage, America/Araguaina, America/Barbados, America/Chicago, America/Denver, America/Los_Angeles America/Mexico_City, America/New_York,
+//	America/Noronha, America/Phoenix, America/Toronto, America/Vancouver, Asia/Bangkok, Asia/Dhaka, Asia/Dubai, Asia/Hong_Kong, Asia/Karachi, Asia/Kathmandu,
+//	Asia/Kolkata, Asia/Magadan, Asia/Singapore, Asia/Tokyo, Atlantic/Cape_Verde, Australia/Perth, Australia/Sydney, Europe/Amsterdam, Europe/Athens,
+//	Europe/London, Europe/Moscow, Pacific/Auckland, Pacific/Honolulu, Pacific/Midway, or UTC.
 func (c *Credentials) ConfigureTimezone(timezone string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -400,4 +405,74 @@ func (c *Credentials) AddvCenterWithCert(vCenterIP, vCenterUsername, vCenterPass
 
 	return c.Post("v1", "/vmware/vcenter", config, httpTimeout).(map[string]interface{})["links"].([]interface{})[0].(map[string]interface{})["href"].(string)
 
+}
+
+// AddvCenterWithCert
+func (c *Credentials) Bootstrap(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask string, dnsSearchDomains, dnsNameServers, ntpServers []string, nodeConfig map[string]string, enableEncryption, waitForCompletion bool, timeout ...int) interface{} {
+
+	httpTimeout := httpTimeout(timeout)
+
+	// Validate that the Credentials struck only has a node ip configured.
+	if len(c.Username) != 0 {
+		log.Fatalf("Error: When bootstrapping a cluster the 'username' variable must be a blank string.")
+	}
+
+	if len(c.Password) != 0 {
+		log.Fatalf("Error: When bootstrapping a cluster the 'password' variable must be a blank string.")
+	}
+
+	config := map[string]interface{}{}
+	config["enableSoftwareEncryptionAtRest"] = enableEncryption
+	config["name"] = clusterName
+	config["dnsNameservers"] = dnsNameServers
+	config["dnsSearchDomains"] = dnsSearchDomains
+	config["ntpServers"] = ntpServers
+
+	config["adminUserInfo"] = map[string]string{}
+	config["adminUserInfo"].(map[string]string)["password"] = adminPassword
+	config["adminUserInfo"].(map[string]string)["emailAddress"] = adminEmail
+	config["adminUserInfo"].(map[string]string)["id"] = "admin"
+
+	config["nodeConfigs"] = map[string]interface{}{}
+	for nodeName, nodeIP := range nodeConfig {
+		config["nodeConfigs"].(map[string]interface{})[nodeName] = map[string]interface{}{}
+		config["nodeConfigs"].(map[string]interface{})[nodeName].(map[string]interface{})["managementIpConfig"] = map[string]string{}
+		config["nodeConfigs"].(map[string]interface{})[nodeName].(map[string]interface{})["managementIpConfig"].(map[string]string)["netmask"] = managementSubnetMask
+		config["nodeConfigs"].(map[string]interface{})[nodeName].(map[string]interface{})["managementIpConfig"].(map[string]string)["gateway"] = managementGateway
+		config["nodeConfigs"].(map[string]interface{})[nodeName].(map[string]interface{})["managementIpConfig"].(map[string]string)["address"] = nodeIP
+	}
+
+	if c.Get("internal", "/node_management/is_bootstrapped", httpTimeout).(map[string]interface{})["value"].(bool) == true {
+		return "The provided Rubrik node is already bootstrapped."
+	}
+
+	bootstrap := c.Post("internal", "/cluster/me/bootstrap", config, httpTimeout)
+	bootstrapRequestID := bootstrap.(map[string]interface{})["id"].(float64)
+
+	if waitForCompletion {
+
+		for {
+
+			bootstrapStatus := c.Get("internal", fmt.Sprintf("/cluster/me/bootstrap?request_id=%v", int(bootstrapRequestID)), httpTimeout)
+
+			switch bootstrapStatus.(map[string]interface{})["status"] {
+			case "IN_PROGRESS":
+				fmt.Println("In Progress")
+				time.Sleep(30 * time.Second)
+			case "FAILURE":
+				fmt.Println("Failure")
+				log.Fatalf("Error: %s", bootstrapStatus.(map[string]interface{})["message"])
+			case "FAILED":
+				fmt.Println("Failed")
+				log.Fatalf("Error: %s", bootstrapStatus.(map[string]interface{})["message"])
+			default:
+				fmt.Println("Default")
+				return bootstrapStatus.(map[string]interface{})["status"]
+
+			}
+
+		}
+	}
+
+	return bootstrap
 }
