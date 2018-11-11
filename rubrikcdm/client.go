@@ -1,3 +1,4 @@
+// RubrikCDM is as
 package rubrikcdm
 
 import (
@@ -23,14 +24,16 @@ const (
 	encodeQueryComponent
 )
 
-// Credentials - Contains parameters used to authenticate against the Rubrik cluster
+// Credentials contains the parameters used to authenticate against the Rubrik cluster.
 type Credentials struct {
 	NodeIP   string
 	Username string
 	Password string
 }
 
-// Connect initializes a new API client based on manually provided credentials.
+// Connect initializes a new API client based on manually provided Rubrik cluster credentials. When possible,
+// the Rubrik credentials should not be stored as plain text in your .go file and ConnectEnv() should be used
+// whenever possibile.
 func Connect(nodeIP, username, password string) *Credentials {
 	client := &Credentials{
 		NodeIP:   nodeIP,
@@ -41,7 +44,14 @@ func Connect(nodeIP, username, password string) *Credentials {
 	return client
 }
 
-// ConnectEnv initializes a new API client based on environment variables.
+// ConnectEnv is the preferred method to initialize a new API client by attempting to read the
+// following environment variables:
+//
+//  rubrik_cdm_node_ip
+//
+//  rubrik_cdm_username
+//
+//  rubrik_cdm_password
 func ConnectEnv() *Credentials {
 
 	nodeIP, ok := os.LookupEnv("rubrik_cdm_node_ip")
@@ -102,7 +112,10 @@ func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config
 	case "DELETE":
 		request, _ = http.NewRequest(callType, requestURL, nil)
 	}
-	request.SetBasicAuth(c.Username, c.Password)
+	if len(c.Username) != 0 {
+		request.SetBasicAuth(c.Username, c.Password)
+	}
+
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Accept", "application/json")
 
@@ -132,10 +145,18 @@ func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config
 	}
 
 	if _, ok := convertedAPIResponse.(map[string]interface{})["errorType"]; ok {
+		fmt.Println("1")
+		fmt.Println(convertedAPIResponse)
 		log.Fatalf("Error: %s", convertedAPIResponse.(map[string]interface{})["message"])
 	}
 
 	if _, ok := convertedAPIResponse.(map[string]interface{})["message"]; ok {
+		// Add exception for bootstrap
+		if _, ok := convertedAPIResponse.(map[string]interface{})["setupEncryptionAtRest"]; ok {
+			return convertedAPIResponse
+
+		}
+
 		log.Fatalf("Error: %s", convertedAPIResponse.(map[string]interface{})["message"])
 	}
 
@@ -239,7 +260,9 @@ func shouldEscape(c byte, mode encoding) bool {
 	return true
 }
 
-// Get - Send a GET request to the provided Rubrik API endpoint.
+// Get sends a GET request to the provided Rubrik API endpoint and returns the full API response. Supported "apiVersions" are v1, v2, and internal.
+// The optional timeout value corresponds to the number of seconds to wait to establish a connection to the Rubrik cluster before returning a
+// timeout error. If not value is provided, a default of 15 seconds will be used.
 func (c *Credentials) Get(apiVersion, apiEndpoint string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -248,7 +271,9 @@ func (c *Credentials) Get(apiVersion, apiEndpoint string, timeout ...int) interf
 
 }
 
-// Post - Send a POST request to the provided Rubrik API endpoint.
+// Post sends a POST request to the provided Rubrik API endpoint and returns the full API response. Supported "apiVersions" are v1, v2, and internal.
+// The optional timeout value corresponds to the number of seconds to wait to establish a connection to the Rubrik cluster before returning a
+// timeout error. If not value is provided, a default of 15 seconds will be used.
 func (c *Credentials) Post(apiVersion, apiEndpoint string, config interface{}, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -256,7 +281,9 @@ func (c *Credentials) Post(apiVersion, apiEndpoint string, config interface{}, t
 	return c.commonAPI("POST", apiVersion, apiEndpoint, config, httpTimeout)
 }
 
-// Patch - Send a PATCH request to the provided Rubrik API endpoint.
+// Patch sends a PATCH request to the provided Rubrik API endpoint and returns the full API response. Supported "apiVersions" are v1, v2, and internal.
+// The optional timeout value corresponds to the number of seconds to wait to establish a connection to the Rubrik cluster before returning a
+// timeout error. If not value is provided, a default of 15 seconds will be used.
 func (c *Credentials) Patch(apiVersion, apiEndpoint string, config interface{}, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -264,7 +291,9 @@ func (c *Credentials) Patch(apiVersion, apiEndpoint string, config interface{}, 
 	return c.commonAPI("PATCH", apiVersion, apiEndpoint, config, httpTimeout)
 }
 
-// Delete - Send a DELETE request to the provided Rubrik API endpoint.
+// Delete sends a DELETE request to the provided Rubrik API endpoint and returns the full API response. Supported "apiVersions" are v1, v2, and internal.
+// The optional timeout value corresponds to the number of seconds to wait to establish a connection to the Rubrik cluster before returning a
+// timeout error. If not value is provided, a default of 15 seconds will be used.
 func (c *Credentials) Delete(apiVersion, apiEndpoint string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
