@@ -93,13 +93,13 @@ func (c *Credentials) EndUserAuthorization(objectName, endUser, objectType strin
 
 }
 
-// ConfigureTimezone provides the ability to set the time zone that is used by the Rubrik cluster. The Rubrik
-// cluster uses the specified time zone for time values in the web UI, all reports, SLA Domain settings, and all other time
-// related operations. Valid timezone choices include: 'America/Anchorage', 'America/Araguaina', 'America/Barbados', 'America/Chicago',
-// 'America/Denver', 'America/Los_Angeles' 'America/Mexico_City', 'America/New_York', 'America/Noronha', 'America/Phoenix', 'America/Toronto',
-// 'America/Vancouver', 'Asia/Bangkok', 'Asia/Dhaka', 'Asia/Dubai', 'Asia/Hong_Kong', 'Asia/Karachi', 'Asia/Kathmandu', 'Asia/Kolkata',
-// 'Asia/Magadan', 'Asia/Singapore', 'Asia/Tokyo', 'Atlantic/Cape_Verde', 'Australia/Perth', 'Australia/Sydney', 'Europe/Amsterdam',
-// 'Europe/Athens', 'Europe/London', 'Europe/Moscow', 'Pacific/Auckland', 'Pacific/Honolulu', 'Pacific/Midway', or 'UTC'.
+// ConfigureTimezone provides the ability to set the time zone that is used by the Rubrik cluster which uses the specified
+// time zone for time values in the web UI, all reports, SLA Domain settings, and all other time related operations. Valid timezone
+// choices include: 'America/Anchorage', 'America/Araguaina', 'America/Barbados', 'America/Chicago', 'America/Denver', 'America/Los_Angeles'
+// 'America/Mexico_City', 'America/New_York', 'America/Noronha', 'America/Phoenix', 'America/Toronto', 'America/Vancouver', 'Asia/Bangkok',
+// 'Asia/Dhaka', 'Asia/Dubai', 'Asia/Hong_Kong', 'Asia/Karachi', 'Asia/Kathmandu', 'Asia/Kolkata', 'Asia/Magadan', 'Asia/Singapore',
+// 'Asia/Tokyo', 'Atlantic/Cape_Verde', 'Australia/Perth', 'Australia/Sydney', 'Europe/Amsterdam', 'Europe/Athens', 'Europe/London',
+// 'Europe/Moscow', 'Pacific/Auckland', 'Pacific/Honolulu', 'Pacific/Midway', or 'UTC'.
 func (c *Credentials) ConfigureTimezone(timezone string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -346,7 +346,7 @@ func (c *Credentials) ConfigureVLAN(netmask string, vlan int, ips map[string]str
 }
 
 // AddvCenter
-func (c *Credentials) AddvCenter(vCenterIP, vCenterUsername, vCenterPassword string, vmLinking bool, timeout ...int) interface{} {
+func (c *Credentials) AddvCenter(vCenterIP, vCenterUsername, vCenterPassword string, vmLinking bool, timeout ...int) string {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -369,12 +369,12 @@ func (c *Credentials) AddvCenter(vCenterIP, vCenterUsername, vCenterPassword str
 		config["conflictResolutionAuthz"] = "NoConflictResolution"
 	}
 
-	return c.Post("v1", "/vmware/vcenter", config, httpTimeout)
+	return c.Post("v1", "/vmware/vcenter", config, httpTimeout).(map[string]interface{})["links"].([]interface{})[0].(map[string]interface{})["href"].(string)
 
 }
 
 // AddvCenterWithCert
-func (c *Credentials) AddvCenterWithCert(vCenterIP, vCenterUsername, vCenterPassword, caCertificate string, vmLinking bool, timeout ...int) interface{} {
+func (c *Credentials) AddvCenterWithCert(vCenterIP, vCenterUsername, vCenterPassword, caCertificate string, vmLinking bool, timeout ...int) string {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -398,6 +398,6 @@ func (c *Credentials) AddvCenterWithCert(vCenterIP, vCenterUsername, vCenterPass
 	}
 	config["caCerts"] = caCertificate
 
-	return c.Post("v1", "/vmware/vcenter", config, httpTimeout)
+	return c.Post("v1", "/vmware/vcenter", config, httpTimeout).(map[string]interface{})["links"].([]interface{})[0].(map[string]interface{})["href"].(string)
 
 }
