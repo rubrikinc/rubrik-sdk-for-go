@@ -14,8 +14,8 @@ func (c *Credentials) ClusterVersion() string {
 	return apiRequest.(map[string]interface{})["version"].(string)
 }
 
-// ClusterVersionCheck returns the following message and then exits if the current CDM version
-// is less than the provided clusterVersion parameter.
+// ClusterVersionCheck is used to determine if the Rubrik cluster is using running an earlier release than the provided CDM "clusterVersion".
+// If the CDM version is an earlier release than the "clusterVersion", the following message error message is thrown:
 //	Error: The Rubrik cluster must be running CDM version {clusterVersion} or later.
 func (c *Credentials) ClusterVersionCheck(clusterVersion float64) {
 	currentClusterVersion, _ := strconv.ParseFloat(c.ClusterVersion()[:3], 2)
@@ -51,7 +51,13 @@ func (c *Credentials) ClusterNodeName() []string {
 	return nodeName
 }
 
-// EndUserAuthorization assigns an End User account privileges for a VMware virtual machine.
+// EndUserAuthorization assigns an End User account privileges for a VMware virtual machine. vmware is currently the only
+// supported "objectType"
+//
+// The function will return one of the following:
+//	No change required. The End User '{endUser}' is already authorized to interact with the '{objectName}' VM.
+//
+//	The full API response for POST /internal/authorization/role/end_user
 func (c *Credentials) EndUserAuthorization(objectName, endUser, objectType string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -105,6 +111,11 @@ func (c *Credentials) EndUserAuthorization(objectName, endUser, objectType strin
 //	America/Noronha, America/Phoenix, America/Toronto, America/Vancouver, Asia/Bangkok, Asia/Dhaka, Asia/Dubai, Asia/Hong_Kong, Asia/Karachi, Asia/Kathmandu,
 //	Asia/Kolkata, Asia/Magadan, Asia/Singapore, Asia/Tokyo, Atlantic/Cape_Verde, Australia/Perth, Australia/Sydney, Europe/Amsterdam, Europe/Athens,
 //	Europe/London, Europe/Moscow, Pacific/Auckland, Pacific/Honolulu, Pacific/Midway, or UTC.
+//
+// The function will return one of the following:
+//	No change required. The Rubrik cluster is already configured with '{timezone}' as it's timezone.
+//
+//	The full API response for POST /v1/cluster/me
 func (c *Credentials) ConfigureTimezone(timezone string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -163,7 +174,12 @@ func (c *Credentials) ConfigureTimezone(timezone string, timeout ...int) interfa
 
 }
 
-// ConfigureNTP provides connection information for NTP servers used for time synchronization.
+// ConfigureNTP provides the connection information for the NTP servers used for time synchronization.
+//
+// The function will return one of the following:
+//	No change required. The NTP server(s) {ntpServers} has already been added to the Rubrik cluster.
+//
+//	The full API response for POST /internal/cluster/me/ntp_server
 func (c *Credentials) ConfigureNTP(ntpServers []string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -196,8 +212,17 @@ func (c *Credentials) ConfigureNTP(ntpServers []string, timeout ...int) interfac
 
 }
 
-// ConfigureSyslog enables the Rubrik cluster ti sebd stskig server messages that are based on the events that also appear in
+// ConfigureSyslog enables the Rubrik cluster to send syslog server messages that are based on the events that also appear in
 // the Activity Log to the provided Syslog Server.
+//
+// Valid protocol choices are:
+//
+//	UDP, TCP
+//
+// The function will return one of the following:
+//	No change required. The Rubrik cluster is already configured to use the syslog server '{syslogIP}' on port '{port}' using the '{protocol}' protocol.
+//
+//	The full API response for POST /internal/syslog
 func (c *Credentials) ConfigureSyslog(syslogIP, protocol string, port float64, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -245,7 +270,12 @@ func (c *Credentials) ConfigureSyslog(syslogIP, protocol string, port float64, t
 
 }
 
-// ConfigureDNSServers
+// ConfigureDNSServers provides the connection information for the DNS Servers used by the Rubrik cluster.
+//
+// The function will return one of the following:
+//	No change required. The Rubrik cluster is already configured with the provided DNS servers.
+//
+//	The full API response for POST /internal/cluster/me/dns_nameserver
 func (c *Credentials) ConfigureDNSServers(serverIP []string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -260,7 +290,12 @@ func (c *Credentials) ConfigureDNSServers(serverIP []string, timeout ...int) int
 
 }
 
-// ConfigureSearchDomain
+// ConfigureSearchDomain provides the connection information for the DNS search domains used by the Rubrik cluster.
+//
+// The function will return one of the following:
+//	No change required. The Rubrik cluster is already configured with the provided DNS search domains.
+//
+//	The full API response for POST /internal/cluster/me/dns_search_domain
 func (c *Credentials) ConfigureSearchDomain(searchDomain []string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -268,14 +303,26 @@ func (c *Credentials) ConfigureSearchDomain(searchDomain []string, timeout ...in
 	currentSearchDomains := c.Get("internal", "/cluster/me/dns_search_domain", httpTimeout).(map[string]interface{})["data"].([]interface{})
 
 	if stringEq(searchDomain, currentSearchDomains) {
-		return "No change required. The Rubrik cluster is already configured with the provided DNS servers."
+		return "No change required. The Rubrik cluster is already configured with the provided DNS search domains."
 	}
 
 	return c.Post("internal", "/cluster/me/dns_search_domain", searchDomain, httpTimeout)
 
 }
 
-// ConfigureSMTPSettings
+// ConfigureSMTPSettings provides the connection information to send notification email messages for delivery to
+// the administrator accounts.
+//
+// Valid encryption choices are:
+//
+//	NONE, SSL, and STARTTLS
+//
+// The function will return one of the following:
+//	No change required. The Rubrik cluster is already configured with the provided SMTP settings.
+//
+//	The full API response for POST /internal/smtp_instance
+//
+// The full API response for PATCH /smtp_instance/{smtpID}
 func (c *Credentials) ConfigureSMTPSettings(hostname, fromEmail, smtpUsername, smtpPassword, encryption string, port int, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -319,7 +366,13 @@ func (c *Credentials) ConfigureSMTPSettings(hostname, fromEmail, smtpUsername, s
 	return c.Patch("internal", fmt.Sprintf("/smtp_instance/%s", smtpID), config, httpTimeout)
 }
 
-// ConfigureVLAN
+// ConfigureVLAN provides the VLAN VLAN tagging information which is an optional feature that allows a Rubrik cluster to
+// efficiently switch network traffic using Virtual Local Area Networks. The ips map should be in a {nodeName:IP} format.
+//
+// The function will return one of the following:
+//	No change required. The Rubrik cluster is already configured with the provided VLAN information.
+//
+//	The full API response for POST /internal/cluster/me/vlan
 func (c *Credentials) ConfigureVLAN(netmask string, vlan int, ips map[string]string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -350,7 +403,12 @@ func (c *Credentials) ConfigureVLAN(netmask string, vlan int, ips map[string]str
 
 }
 
-// AddvCenter
+// AddvCenter connects to the Rubrik cluster to a new vCenter instance.
+//
+// The function will return one of the following:
+//	No change required. The vCenter '{vcenterIP}' has already been added to the Rubrik cluster.
+//
+//	The full API response for POST /v1/vmware/vcenter
 func (c *Credentials) AddvCenter(vCenterIP, vCenterUsername, vCenterPassword string, vmLinking bool, timeout ...int) string {
 
 	httpTimeout := httpTimeout(timeout)
@@ -378,7 +436,12 @@ func (c *Credentials) AddvCenter(vCenterIP, vCenterUsername, vCenterPassword str
 
 }
 
-// AddvCenterWithCert
+// AddvCenterWithCert connects to the Rubrik cluster to a new vCenter instance using a CA certificate.
+//
+// The function will return one of the following:
+//	No change required. The vCenter '{vcenterIP}' has already been added to the Rubrik cluster.
+//
+//	The full API response for POST /v1/vmware/vcenter
 func (c *Credentials) AddvCenterWithCert(vCenterIP, vCenterUsername, vCenterPassword, caCertificate string, vmLinking bool, timeout ...int) string {
 
 	httpTimeout := httpTimeout(timeout)
@@ -407,7 +470,15 @@ func (c *Credentials) AddvCenterWithCert(vCenterIP, vCenterUsername, vCenterPass
 
 }
 
-// AddvCenterWithCert
+// Bootstrap will complete the bootstrap process for a Rubrik cluster and requires a single node to have it's management interface
+// configured. You will also need to use Connect() with the "username" and "password" set to blank strings. The "nodeConfig" should be in a
+// {nodeName: nodeManagementIP} format. To monitor the bootstrap process and wait for the process to complete, set "waitForCompletion" to true.
+//
+// The function will return one of the following:
+//
+//	The full API response for POST /internal/cluster/me/bootstrap?request_id={requestID} (waitForCompletion is set to true)
+//
+//	The full API response for POST /internal/cluster/me/bootstrap (waitForCompletion is set to false)
 func (c *Credentials) Bootstrap(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask string, dnsSearchDomains, dnsNameServers, ntpServers []string, nodeConfig map[string]string, enableEncryption, waitForCompletion bool, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -467,7 +538,7 @@ func (c *Credentials) Bootstrap(clusterName, adminEmail, adminPassword, manageme
 				log.Fatalf("Error: %s", bootstrapStatus.(map[string]interface{})["message"])
 			default:
 				fmt.Println("Default")
-				return bootstrapStatus.(map[string]interface{})["status"]
+				return bootstrapStatus
 
 			}
 
