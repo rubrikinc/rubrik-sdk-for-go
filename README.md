@@ -1,37 +1,23 @@
 # rubrik-sdk-for-go
 Rubrik Cloud Data Management SDK for Go
 
-```go
-package main
+<p></p>
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/8610203/48332236-55506f00-e610-11e8-9a60-594de963a1ee.png" alt="Rubrik Gopher Logo"/>
+</p>
 
-import (
-	"fmt"
-	"github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
-)
+# Installation
 
-func main() {
+```go get github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm```
 
-	rubrik := rubrikcdm.ConnectEnv()
-	
-	// GET
-	clusterVersion := rubrik.Get("v1", "/cluster/me")
-	fmt.Println(clusterVersion["version"])
+# Documentation
 
-	// POST
-	config := map[string]string{"slaId": "388a473c-3361-42ab-8f5b-08edb76891f6"}
+[https://godoc.org/github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm](https://godoc.org/github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm)
 
-	onDemandSnapshot := rubrik.Post("v1", "/vmware/vm/VirtualMachine:::fbcb1f51-9520-4227-a68c-6fe145982f48-vm-204969/snapshot", config)
-	fmt.Println(onDemandSnapshot)
+# AUTHOR INFORMATION
 
-	// PATCH
-	config := map[string]string{"configuredSlaDomainId": "388a473c-3361-42ab-8f5b-08edb76891f6"}
+<p></p>
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/8610203/37415009-6f9cf416-2778-11e8-8b56-052a8e41c3c8.png" alt="Rubrik Ranger Logo"/>
+</p>
 
-	fileset := rubrik.Patch("v1", "/fileset/Fileset:::b95456e2-7d60-4ed0-af88-648516e139a6", config)
-	fmt.Println(fileset)
-
-	// DELETE
-	deleteSLA := rubrik.Delete("v1", "/sla_domain/1e76a57b-f96b-483d-91cd-65d0a43a1eed")
-	fmt.Println(deleteSLA)
-
-}
-```
