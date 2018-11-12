@@ -14,6 +14,31 @@ Rubrik Cloud Data Management SDK for Go
 
 [https://godoc.org/github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm](https://godoc.org/github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm)
 
+# Example
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
+)
+
+func main() {
+
+	rubrik := rubrikcdm.ConnectEnv()
+	
+	// GET the Rubrik cluster Version
+	clusterSummary := rubrik.Get("v1", "/cluster/me")
+	fmt.Println(clusterSummary["version"])
+
+	// Simplified Function to determine the Rubrik cluster version
+	clusterVersion := rubrik.ClusterVersion()
+	fmt.Println(clusterVersion)
+
+}
+```
+
 # AUTHOR INFORMATION
 
 <p></p>
