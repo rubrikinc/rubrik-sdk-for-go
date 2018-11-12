@@ -7,7 +7,28 @@ import (
 	"strings"
 )
 
-// AddAWSNativeAccount
+// AddAWSNativeAccount enables the management and protection of Amazon Elastic Compute Cloud (Amazon EC2) instances. The "regionalBoltNetworkConfigs"
+// should be a list of dictionaries in the following format:
+//
+// 	usEast1 := map[string]string{}
+//	usEast1["region"] = "us-east-1"
+//	usEast1["region"] = "us-east-1"
+//	usEast1["region"] = "us-east-1"
+//	usEast1["vNetId"] = "vpc-11a44968"
+//	usEast1["subnetId"] = "subnet-3ac58e06"
+//	usEast1["securityGroupId"] = "sg-9ba90ee5"
+//
+//	regionalBoltNetworkConfigs := []interface{}{usEast1}
+//
+// Valid "awsRegion" choices are:
+//
+//	ap-south-1,ap-northeast-3, ap-northeast-2, ap-southeast-1, ap-southeast-2, ap-northeast-1, ca-central-1, cn-north-1, cn-northwest-1, eu-central-1, eu-west-1,
+//	eu-west-2, eu-west-3, us-west-1, us-east-1, us-east-2, and us-west-2.
+//
+// The function will return one of the following:
+//	No change required. Cloud native source with access key '{awsAccessKey}' is already configured on the Rubrik cluster.
+//
+//	The full API response for POST /internal/aws/account.
 func (c *Credentials) AddAWSNativeAccount(awsAccountName, awsAccessKey, awsSecretKey string, awsRegions []string, regionalBoltNetworkConfigs interface{}, timeout ...int) interface{} {
 
 	c.ClusterVersionCheck(4.2)
@@ -76,7 +97,21 @@ func (c *Credentials) AddAWSNativeAccount(awsAccountName, awsAccessKey, awsSecre
 
 }
 
-// AWSS3CloudOutRSA configures a new AWS S3 archive target using RSA Key for Encryption.
+// AWSS3CloudOutRSA configures a new AWS S3 archive target using a RSA Key for encryption.
+//
+// Valid "awsRegion" choices are:
+//
+//	ap-south-1,ap-northeast-3, ap-northeast-2, ap-southeast-1, ap-southeast-2, ap-northeast-1, ca-central-1, cn-north-1, cn-northwest-1, eu-central-1, eu-west-1,
+//	eu-west-2, eu-west-3, us-west-1, us-east-1, us-east-2, and us-west-2.
+//
+// Valid "storageClass" choices are:
+//
+//	ap-standard-1, standard_ia, and reduced_redundancy
+//
+// The function will return one of the following:
+//	- No change required. The '{archiveName}' archive location is already configured on the Rubrik cluster.
+//
+//	- The full API response for POST /internal/archive/object_store.
 func (c *Credentials) AWSS3CloudOutRSA(awsBucketName, storageClass, archiveName, awsRegion, awsAccessKey, awsSecretKey, rsaKey string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -157,7 +192,21 @@ func (c *Credentials) AWSS3CloudOutRSA(awsBucketName, storageClass, archiveName,
 	return c.Post("internal", "/archive/object_store", config, httpTimeout)
 }
 
-// AWSS3CloudOutKMS configures a new AWS S3 archive target using a AWS KMS Master Key ID for Encryption.
+// AWSS3CloudOutKMS configures a new AWS S3 archive target using a AWS KMS Master Key ID for encryption.
+//
+// Valid "awsRegion" choices are:
+//
+//	ap-south-1,ap-northeast-3, ap-northeast-2, ap-southeast-1, ap-southeast-2, ap-northeast-1, ca-central-1, cn-north-1, cn-northwest-1, eu-central-1, eu-west-1,
+//	eu-west-2, eu-west-3, us-west-1, us-east-1, us-east-2, and us-west-2.
+//
+// Valid "storageClass" choices are:
+//
+//	ap-standard-1, standard_ia, and reduced_redundancy
+//
+// The function will return one of the following:
+//	- No change required. The '{archiveName}' archive location is already configured on the Rubrik cluster.
+//
+//	- The full API response for POST /internal/archive/object_store/{archiveID}
 func (c *Credentials) AWSS3CloudOutKMS(awsBucketName, storageClass, archiveName, awsRegion, awsAccessKey, awsSecretKey, kmsMasterKeyID string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -238,7 +287,13 @@ func (c *Credentials) AWSS3CloudOutKMS(awsBucketName, storageClass, archiveName,
 	return c.Post("internal", "/archive/object_store", config, httpTimeout)
 }
 
-// AWSS3CloudOn
+// AWSS3CloudOn provides the ability to convert a vSphere virtual machines snapshot, an archived snapshot, or a replica into an Amazon Machine Image (AMI)
+// and then launch that AMI into an Elastic Compute Cloud (EC2) instance on an Amazon Virtual Private Cloud (VPC).
+//
+// The function will return one of the following:
+//	- No change required. The '{archiveName}' archive location is already configured for CloudOn.
+//
+//	- The full API response for PATCH /internal/archive/object_store.
 func (c *Credentials) AWSS3CloudOn(archiveName, vpcID, subnetID, securityGroupID string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -273,7 +328,16 @@ func (c *Credentials) AWSS3CloudOn(archiveName, vpcID, subnetID, securityGroupID
 
 }
 
-// AzureCloudOut
+// AzureCloudOut configures a new Azure archive target.
+//
+// Valid "instanceType" choices are:
+//
+//	default, china, germany, and government
+//
+// The function will return one of the following:
+//	- No change required. The '{archiveName}' archive location is already configured on the Rubrik cluster.
+//
+//	- The full API response for POST /internal/archive/object_store.
 func (c *Credentials) AzureCloudOut(container, azureAccessKey, storageAccountName, archiveName, instanceType, rsaKey string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -347,7 +411,18 @@ func (c *Credentials) AzureCloudOut(container, azureAccessKey, storageAccountNam
 
 }
 
-// AzureCloudOn
+// AzureCloudOn provides the ability to convert a snapshot, archived snapshot, or replica into a Virtual Hard Disk (VHD). This enables the instantiation
+// of the associated virtual machine on the Microsoft Azure cloud platform.
+//
+// Valid "region" choices are:
+// 	westus, westus2, centralus, eastus, eastus2, northcentralus, southcentralus, westcentralus, canadacentral, canadaeast, brazilsouth,
+//	northeurope, westeurope, uksouth, ukwest, eastasia, southeastasia, japaneast, japanwest, australiaeast, australiasoutheast, centralindia,
+//	southindia, westindia, koreacentral, koreasouth
+//
+// The function will return one of the following:
+//	- No change required. The '{archiveName}' archive location is already configured for CloudOn.
+//
+//	- The full API response for PATCH /internal/archive/object_store.
 func (c *Credentials) AzureCloudOn(archiveName, container, storageAccountName, applicationID, applicationKey, directoryID, region, virtualNetworkID, subnetName, securityGroupID string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)

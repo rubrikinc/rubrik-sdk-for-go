@@ -5,7 +5,11 @@ import (
 	"log"
 )
 
-// ObjectID will search the Rubrik cluster for the provided objectName and return its Id
+// ObjectID will search the Rubrik cluster for the provided "objectName" and return its ID/
+//
+// Valid "awsRegion" choices are:
+//
+//	vmware, sla, vmwareHost, physicalHost, filesetTemplate, managedVolume
 func (c *Credentials) ObjectID(objectName, objectType string, hostOS ...string) string {
 
 	validObjectType := map[string]bool{
@@ -93,7 +97,13 @@ func (c *Credentials) ObjectID(objectName, objectType string, hostOS ...string) 
 
 }
 
-// AssignSLA
+// AssignSLA adds the "objectName" to the "slaName". vmware is currently the only supported "objectType". To exclude the object from all SLA assignments
+// use "do not protect" as the "slaName". To assign the selected object to the SLA of the next higher level object, use "clear" as the "slaName".
+//
+// The function will return one of the following:
+//	No change required. The vSphere VM '{objectName}' is already assigned to the '{slaName}' SLA Domain.
+//
+//	The full API response for POST /internal/sla_domain/{slaID}/assign.
 func (c *Credentials) AssignSLA(objectName, objectType, slaName string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -141,7 +151,13 @@ func (c *Credentials) AssignSLA(objectName, objectType, slaName string, timeout 
 	return c.Post("internal", fmt.Sprintf("/sla_domain/%s/assign", slaID), config, httpTimeout)
 }
 
-// BeginManagedVolumeSnapshot
+// BeginManagedVolumeSnapshot opens a managed volume for writes. All writes to the managed volume until the snapshot is
+// ended will be part of its snapshot.
+//
+// The function will return one of the following:
+//	No change required. The Managed Volume '{name}' is already in a writeable state.
+//
+//	The full API response for POST /internal/managed_volume/{managedVolumeID}/begin_snapshot
 func (c *Credentials) BeginManagedVolumeSnapshot(name string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -161,7 +177,12 @@ func (c *Credentials) BeginManagedVolumeSnapshot(name string, timeout ...int) in
 
 }
 
-// EndManagedVolumeSnapshot
+// EndManagedVolumeSnapshot closes a managed volume for writes. A snapshot will be created containing all writes since the last begin snapshot call.
+//
+// The function will return one of the following:
+//	No change required. The Managed Volume '{name}' is already in a read-only state.
+//
+//	The full API response for POST /internal/managed_volume/{managedVolumeID}/end_snapshot
 func (c *Credentials) EndManagedVolumeSnapshot(name, slaName string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -191,7 +212,7 @@ func (c *Credentials) EndManagedVolumeSnapshot(name, slaName string, timeout ...
 
 }
 
-// GetSLAObjects
+// GetSLAObjects returns the name and ID of a specific object type.
 func (c *Credentials) GetSLAObjects(slaName, objectType string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -226,7 +247,12 @@ func (c *Credentials) GetSLAObjects(slaName, objectType string, timeout ...int) 
 	return ""
 }
 
-// PauseSnapshot
+// PauseSnapshot suspends all snapshot activity for the provided object. The only "objectType" current supported is vmware.
+//
+// The function will return one of the following:
+//	No change required. The '{objectName}' '{objectType}' is already paused.
+//
+//	The full API response for POST /internal/vmware/vm/{vmID}
 func (c *Credentials) PauseSnapshot(objectName, objectType string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -264,7 +290,12 @@ func (c *Credentials) PauseSnapshot(objectName, objectType string, timeout ...in
 	return ""
 }
 
-// ResumeSnapshot
+// ResumeSnapshot resumes all snapshot activity for the provided object. The only "objectType" currently supported is vmware.
+//
+// The function will return one of the following:
+//	No change required. The '{objectName}' '{objectType}' is currently not paused.
+//
+//	The full API response for POST /internal/vmware/vm/{vmID}
 func (c *Credentials) ResumeSnapshot(objectName, objectType string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -302,7 +333,11 @@ func (c *Credentials) ResumeSnapshot(objectName, objectType string, timeout ...i
 	return ""
 }
 
-// OnDemandSnapshotVM
+// OnDemandSnapshotVM initiates an on-demand snapshot for the "objectName". The only "objectType" currently supported is vmware. To use the currently
+// assigned SLA Domain for the snapshot use "current" for the slaName.
+//
+// The function will return:
+//	The job status URL for the on-demand Snapshot
 func (c *Credentials) OnDemandSnapshotVM(objectName, objectType, slaName string, timeout ...int) string {
 
 	httpTimeout := httpTimeout(timeout)
@@ -342,7 +377,15 @@ func (c *Credentials) OnDemandSnapshotVM(objectName, objectType, slaName string,
 	return ""
 }
 
-// OnDemandSnapshotPhysicalHost
+// OnDemandSnapshotPhysical initiates an on-demand snapshot for a physical host ("hostname"). To use the currently  assigned SLA Domain for the
+// snapshot use "current" for the slaName.
+//
+// Valid "hostOS" choices are:
+//
+//	Linux and Windows
+//
+// The function will return:
+//	The job status URL for the on-demand Snapshot
 func (c *Credentials) OnDemandSnapshotPhysical(hostName, slaName, fileset, hostOS string, timeout ...int) string {
 
 	httpTimeout := httpTimeout(timeout)

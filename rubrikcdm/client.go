@@ -1,4 +1,6 @@
-// RubrikCDM is as
+// Package rubrikcdm transforms the Rubrik API functionality into easy to consume functions. This eliminates the need to understand
+// how to consume raw Rubrik APIs with Go and extends upon one of Rubrik’s main design centers - simplicity. Rubrik’s API first architecture enables
+// organizations to embrace and integrate Rubrik functionality into their existing automation processes.
 package rubrikcdm
 
 import (
@@ -24,7 +26,8 @@ const (
 	encodeQueryComponent
 )
 
-// Credentials contains the parameters used to authenticate against the Rubrik cluster.
+// Credentials contains the parameters used to authenticate against the Rubrik cluster and can be consumed
+// through ConnectEnv() or Connect().
 type Credentials struct {
 	NodeIP   string
 	Username string
@@ -32,8 +35,8 @@ type Credentials struct {
 }
 
 // Connect initializes a new API client based on manually provided Rubrik cluster credentials. When possible,
-// the Rubrik credentials should not be stored as plain text in your .go file and ConnectEnv() should be used
-// whenever possibile.
+// the Rubrik credentials should not be stored as plain text in your .go file. ConnectEnv() can be used
+// as a safer alternative.
 func Connect(nodeIP, username, password string) *Credentials {
 	client := &Credentials{
 		NodeIP:   nodeIP,
@@ -164,7 +167,7 @@ func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config
 
 }
 
-// Validate the API Version provided in the Base API functions
+// apiVersionValidation validates the API Version provided in the Base API functions. Valid versions are v1, v2 and internal.
 func apiVersionValidation(apiVersion string) bool {
 	validAPIVersions := []string{"v1", "v2", "internal"}
 
@@ -176,7 +179,7 @@ func apiVersionValidation(apiVersion string) bool {
 	return false
 }
 
-// Validate the endpoint provided in the Base API functions
+// endpointValidation validates that the endpoint provided in the Base API functions starts with a / but does not end with one.
 func endpointValidation(apiEndpoint string) string {
 
 	if string(apiEndpoint[0]) != "/" {
@@ -187,7 +190,7 @@ func endpointValidation(apiEndpoint string) string {
 	return "succes"
 }
 
-// Return a default timeout value of 15 or use the value provided by the end user
+// httpTimeout returns a default timeout value of 15 or use the value provided by the end user
 func httpTimeout(timeout []int) int {
 	if len(timeout) == 0 {
 		return int(15) // if not timeout value is provided, set the default to 15
@@ -196,7 +199,7 @@ func httpTimeout(timeout []int) int {
 
 }
 
-// Custom implementation of url.PathEscape
+// getEscape is a custom implementation of url.PathEscape.
 func getEscape(s string) string {
 	return escape(s, encodePathSegment)
 }
@@ -262,7 +265,7 @@ func shouldEscape(c byte, mode encoding) bool {
 
 // Get sends a GET request to the provided Rubrik API endpoint and returns the full API response. Supported "apiVersions" are v1, v2, and internal.
 // The optional timeout value corresponds to the number of seconds to wait to establish a connection to the Rubrik cluster before returning a
-// timeout error. If not value is provided, a default of 15 seconds will be used.
+// timeout error. If no value is provided, a default of 15 seconds will be used.
 func (c *Credentials) Get(apiVersion, apiEndpoint string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -273,7 +276,7 @@ func (c *Credentials) Get(apiVersion, apiEndpoint string, timeout ...int) interf
 
 // Post sends a POST request to the provided Rubrik API endpoint and returns the full API response. Supported "apiVersions" are v1, v2, and internal.
 // The optional timeout value corresponds to the number of seconds to wait to establish a connection to the Rubrik cluster before returning a
-// timeout error. If not value is provided, a default of 15 seconds will be used.
+// timeout error. If no value is provided, a default of 15 seconds will be used.
 func (c *Credentials) Post(apiVersion, apiEndpoint string, config interface{}, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -283,7 +286,7 @@ func (c *Credentials) Post(apiVersion, apiEndpoint string, config interface{}, t
 
 // Patch sends a PATCH request to the provided Rubrik API endpoint and returns the full API response. Supported "apiVersions" are v1, v2, and internal.
 // The optional timeout value corresponds to the number of seconds to wait to establish a connection to the Rubrik cluster before returning a
-// timeout error. If not value is provided, a default of 15 seconds will be used.
+// timeout error. If no value is provided, a default of 15 seconds will be used.
 func (c *Credentials) Patch(apiVersion, apiEndpoint string, config interface{}, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -293,7 +296,7 @@ func (c *Credentials) Patch(apiVersion, apiEndpoint string, config interface{}, 
 
 // Delete sends a DELETE request to the provided Rubrik API endpoint and returns the full API response. Supported "apiVersions" are v1, v2, and internal.
 // The optional timeout value corresponds to the number of seconds to wait to establish a connection to the Rubrik cluster before returning a
-// timeout error. If not value is provided, a default of 15 seconds will be used.
+// timeout error. If no value is provided, a default of 15 seconds will be used.
 func (c *Credentials) Delete(apiVersion, apiEndpoint string, timeout ...int) interface{} {
 
 	httpTimeout := httpTimeout(timeout)
@@ -301,7 +304,7 @@ func (c *Credentials) Delete(apiVersion, apiEndpoint string, timeout ...int) int
 	return c.commonAPI("DELETE", apiVersion, apiEndpoint, nil, httpTimeout)
 }
 
-// stringEq converts b to[]string, sorts the two []string, and checks for equality
+// stringEq converts b to []string, sorts the two []string, and checks for equality
 func stringEq(a []string, b []interface{}) bool {
 
 	// Convert []interface {} to []string
