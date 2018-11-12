@@ -30,7 +30,7 @@ func main() {
 	
 	// GET the Rubrik cluster Version
 	clusterSummary := rubrik.Get("v1", "/cluster/me")
-	fmt.Println(clusterSummary["version"])
+	fmt.Println(clusterSummary.(map[string]interface{})["version"])
 
 	// Simplified Function to determine the Rubrik cluster version
 	clusterVersion := rubrik.ClusterVersion()
