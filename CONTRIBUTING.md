@@ -1,29 +1,71 @@
 # Rubrik SDK for Go Development Guide
 
-## Common Environment Setup
+## Common Environment Setup - Microsoft Windows
 
-1. Clone the Python SDK repository
+1. Create a new directory for development work and change to that directory
+```
+md dev
+cd dev
+```
+2. Change your `GOPATH` environment variable to the current directory
+```
+set "GOPATH=%cd%"
+```
+3. Create the necessary directory structure
+```
+md src\github.com\rubrikinc
+```
+4. Change to the newly created directory
+```
+cd src\github.com\rubrikinc
+```
+5. Clone the Rubrik SDK for Python repository
+```
+git clone https://github.com/rubrikinc/rubrik-sdk-for-go.git
+```
+6. Change to the repository root directory
+```
+cd rubrik-sdk-for-go
+```
+7. Switch to the devel branch
+```
+git checkout devel
+```
 
-      `git clone https://github.com/rubrikinc/rubrik-sdk-for-python.git`
+## Common Environment Setup - macOS and \*nix
 
-2. Change directory to the repository root dir
-
-     `cd rubrik-sdk-for-python`
-
-3. Switch to the `devel` branch
-
-     `git checkout devel`
-
-4. Create a virtual environment
-
-5. Activate the virtual environment
-
-6. Install the SDK from Source
-
-      `go get github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm`
+1. Create a new directory for development work and change to that directory
+```
+md dev
+cd dev
+```
+2. Change your GOPATH environment variable to the current directory
+```
+export GOPATH=`pwd`
+```
+3. Create the necessary directory structure
+```
+mkdir -p src/github.com/rubrikinc
+```
+4. Change to the newly created directory
+```
+cd src/github.com/rubrikinc
+```
+5. Clone the Rubrik SDK for Python repository
+```
+git clone https://github.com/rubrikinc/rubrik-sdk-for-go.git
+```
+6. Change to the repository root directory
+```
+cd rubrik-sdk-for-go
+```
+7. Switch to the devel branch
+```
+git checkout devel
+```
 
 ## New Function Development
-The `/rubrik-sdk-for-go/rubrik_cdm directory` contains all functions for the SDK.
+The `/rubrik-sdk-for-go/rubrikcdm` directory contains all functions for the SDK.
 
 At a high level the directory contains the following:
 
@@ -33,9 +75,12 @@ At a high level the directory contains the following:
 * `data_management.go` - Functions related to Data Protection tasks (ex. On-demand snapshots)
 * `examples_test.go` - Example code utilizing the SDK
 
-When adding a new function, it would ideally fit into one of these files. Each function should have the following:
+When adding a new function it ideally should be categorized to fit into one of the above files. Each function should meet the following requirements:
 
-* Each function must be idempotent. Before making any configuration changes (post, patch, delete) you should first check to see if that change is necessary. If it's not you must return a message formatted as `No change required. {message}:`  For example, the `AssignSLA` function first checks to see if the Rubrik object is already assigned to the provided SLA domain.
+* Each function must be idempotent. Before making any configuration changes (post, patch, delete) you should first check to see if that change is necessary. If it's not you must return a message formatted as `No change required. {message}`. For example, the `AssignSLA()` function first checks to see if the Rubrik object is already assigned to the provided SLA domain.
+* A corresponding example created in `examples_test.go`.
+
+Once a new function has been added you will then submit a new Pull Request which will be reviewed before merging into the devel branch.
 * A corresponding example created in `examples_test.go`.
 
 Once a new function has been added you will then submit a new Pull Request which will be reviewed before merging into the `devel` branch.
