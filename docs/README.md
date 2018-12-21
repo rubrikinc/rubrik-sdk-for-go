@@ -68,7 +68,7 @@ The Rubrik SDK for Go utilizes the `rubrikcdm.Connect()` or `rubrikcdm.ConnectEn
 
 To initiate the function, first import the rubrikcdm package and assign the response of `rubrikcdm.ConnectEnv()` to a variable as follows:
 
-```
+```go
 import "github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
 rubrik := rubrikcdm.ConnectEnv()
 ```
@@ -78,7 +78,7 @@ rubrik := rubrikcdm.ConnectEnv()
 
 Any subsequent calls to methods or functions within the rubrikcdm package are now executed through the context of the variable used to store the response from the ConnectEnv() method. For example, to retrieve the VMware VMs within the Gold SLA Domain the following code is used:
 
-```
+```go
 import fmt
 import "github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
 
@@ -115,7 +115,7 @@ The following code will walk through a number of real-world examples of protecti
 
 Follow the instructions in "Authenticating with Environment Variables" to set variables needed for the `ConnectEnv()` function. Create a file named `vmwarevms.go` in your working directory and copy in the following code. Adjust the variables as needed to work in your environment.
 
-```
+```go
 package main 
 
 import fmt
@@ -214,7 +214,7 @@ This guide acts only as a quick start to get up and running with the Rubrik SDK 
 
 The Rubrik SDK for Go supports much of the functionality available within the Rubrik CDM. That said, the release cycles between the SDK and Rubrik CDM are not simultaneous. This means there may be times when new features or enhancements are added to the product but methods and functions to utilize them may be missing from the SDK. In these situations Go may be used to make native calls to Rubrik's RESTful API. The following syntax outlines a common piece of Rubrik functionality, assigning a VM to an SLA Domain, however, it does so by sending API requests to Rubrik CDM utilizing the `rubrikcdm.Get()` and `rubrikcdm.Patch()` functions:
 
-```
+```go
 package main
 
 import "github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
