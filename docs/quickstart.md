@@ -86,7 +86,7 @@ rubrik := rubrikcdm.ConnectEnv()
 fmt.Println rubrik.GetSLAObjects("Gold","vmware")
 ```
 
-For a full list of functions, methods, and their associated arguments see the official [Rubrik SDK for Go documentation](https://rubrik.gitbook.io/rubrik-sdk-for-python).
+For a full list of functions, methods, and their associated arguments see the official [Rubrik SDK for Go documentation](https://godoc.org/github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm).
 
 ## Rubrik SDK for Go Quickstart
 
@@ -111,7 +111,7 @@ go get github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm
 
 The following code will walk through a number of real-world examples of protecting and restoring VMware Virtual Machines. For a complete listing of available functionality see the complete [Rubrik SDK for Go documentation](https://godoc.org/github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm).
 
-#### Setting up the sample workflow
+#### Setting up the Sample Workflow
 
 Follow the instructions in "Authenticating with Environment Variables" to set variables needed for the `ConnectEnv()` function. Create a file named `vmwarevms.go` in your working directory and copy in the following code. Adjust the variables as needed to work in your environment.
 
@@ -178,7 +178,7 @@ main {
 }
 ```
 
-#### Breaking down the sample workflow
+#### Breaking Down the Sample Workflow
 
 After importing the needed modules and connecting to the Rubrik cluster, the main examples start on Line 8.
 
@@ -188,7 +188,7 @@ After importing the needed modules and connecting to the Rubrik cluster, the mai
 
 **Lines 34 through 56** obtains the ID of a VM protected by Rubrik, and uses the `Get()` function to gather details about the VM. A for loop is used to iterate through the API response and display details about the VM to the user.
 
-#### Running the sample workflow
+#### Running the Sample Workflow
 
 Once `vmwarevms.go` is saved within the working directory execute the code with the following statement:
 
