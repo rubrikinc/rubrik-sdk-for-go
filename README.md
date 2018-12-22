@@ -1,5 +1,4 @@
-# rubrik-sdk-for-go
-Rubrik Cloud Data Management SDK for Go
+# Rubrik SDK for Go
 
 <p></p>
 <p align="center">
@@ -9,6 +8,10 @@ Rubrik Cloud Data Management SDK for Go
 # Installation
 
 ```go get github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm```
+
+# Quickstart
+
+[https://github.com/rubrikinc/rubrik-sdk-for-go/blob/master/docs/quickstart.md](https://github.com/rubrikinc/rubrik-sdk-for-go/blob/master/docs/quickstart.md)
 
 # Documentation
 
