@@ -198,7 +198,7 @@ go run vmwarevms.go
 
 #### Accessing the Built-in Sample Code
 
-To help accelerate development the Rubrik SDK for Python source contains many files containing common activities often performed against a Rubrik cluster. Sample code may be found on the [Rubrik SDK for Go GitHub page](https://github.com/rubrikinc/rubrik-sdk-for-go/blob/master/rubrikcdm/examples_test.go).
+To help accelerate development the Rubrik SDK for Go source contains many files containing common activities often performed against a Rubrik cluster. Sample code may be found on the [Rubrik SDK for Go GitHub page](https://github.com/rubrikinc/rubrik-sdk-for-go/blob/master/rubrikcdm/examples_test.go).
 
 Paste the desired code into a new file, in this case named `samplefile.go`. Sample code may be executed using the following syntax
 
@@ -264,7 +264,7 @@ md src\github.com\rubrikinc
 ```
 cd src\github.com\rubrikinc
 ```
-5. Clone the Rubrik SDK for Python repository
+5. Clone the Rubrik SDK for Go repository
 ```
 git clone https://github.com/rubrikinc/rubrik-sdk-for-go.git
 ```
@@ -296,7 +296,7 @@ mkdir -p src/github.com/rubrikinc
 ```
 cd src/github.com/rubrikinc
 ```
-5. Clone the Rubrik SDK for Python repository
+5. Clone the Rubrik SDK for Go repository
 ```
 git clone https://github.com/rubrikinc/rubrik-sdk-for-go.git
 ```
@@ -334,5 +334,5 @@ For more information around contributing to the Rubrik SDK for Go see the [Rubri
 
 * [Rubrik SDK for Go GitHub Repository](https://github.com/rubrikinc/rubrik-sdk-for-go)
 * [Rubrik SDK for Go Official Documentation](https://godoc.org/github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm)
-* [Rubrik SDK for Python Development Guide (GitHub)](https://github.com/rubrikinc/rubrik-sdk-for-go/blob/devel/CONTRIBUTING.md)
+* [Rubrik SDK for Go Development Guide (GitHub)](https://github.com/rubrikinc/rubrik-sdk-for-go/blob/devel/CONTRIBUTING.md)
 * [Introducing the Rubrik SDK for Go](https://www.rubrik.com/blog/rubrik-google-go-sdk/)
