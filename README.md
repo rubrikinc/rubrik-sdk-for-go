@@ -11,11 +11,12 @@
 
 ## Quickstart
 
-[https://github.com/rubrikinc/rubrik-sdk-for-go/blob/master/docs/quickstart.md](https://github.com/rubrikinc/rubrik-sdk-for-go/blob/master/docs/quickstart.md)
+[Quickstart Guide](https://github.com/rubrikinc/rubrik-sdk-for-go/blob/master/docs/quickstart.md)
 
 ## Documentation
 
-[Full Documentation](https://godoc.org/github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm)
+[SDK Documentation](https://godoc.org/github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm)
+[Rubrik API Documentation]( )
 
 ## Example
 
@@ -42,7 +43,7 @@ func main() {
 }
 ```
 
-# AUTHOR INFORMATION
+## Author Information
 
 <p></p>
 <p align="center">
