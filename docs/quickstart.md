@@ -1,4 +1,4 @@
-# Rubrik SDK for Go QuickStart Guide
+# Quickstart Guide: Rubrik SDK for Go
 
 ## Introduction to the Rubrik SDK for Go
 
