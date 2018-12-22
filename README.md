@@ -5,19 +5,19 @@
   <img src="https://user-images.githubusercontent.com/8610203/48332236-55506f00-e610-11e8-9a60-594de963a1ee.png" alt="Rubrik Gopher Logo"/>
 </p>
 
-# Installation
+## Installation
 
 ```go get github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm```
 
-# Quickstart
+## Quickstart
 
 [https://github.com/rubrikinc/rubrik-sdk-for-go/blob/master/docs/quickstart.md](https://github.com/rubrikinc/rubrik-sdk-for-go/blob/master/docs/quickstart.md)
 
-# Documentation
+## Documentation
 
-[https://godoc.org/github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm](https://godoc.org/github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm)
+[Full Documentation](https://godoc.org/github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm)
 
-# Example
+## Example
 
 ```go
 package main
