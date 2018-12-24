@@ -120,7 +120,6 @@ package main
 
 import (
 	"fmt"
-
 	"github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
 )
 
