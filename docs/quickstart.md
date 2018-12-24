@@ -116,65 +116,68 @@ The following code will walk through a number of real-world examples of protecti
 Follow the instructions in "Authenticating with Environment Variables" to set variables needed for the `ConnectEnv()` function. Create a file named `vmwarevms.go` in your working directory and copy in the following code. Adjust the variables as needed to work in your environment.
 
 ```go
-package main 
+package main
 
-import fmt
-import "github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
+import (
+	"fmt"
 
-main {  
-  # Establish a connection to the Rubrik cluster
-  rubrik := rubrikcdm.ConnectEnv()
+	"github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
+)
 
-  #=============================================================
-  # Example of protecting a VMware Virtual Machine
-  #=============================================================
+func main() {
+	// Establish a connection to the Rubrik cluster
+	rubrik := rubrikcdm.ConnectEnv()
 
-  # Set Function Variables
-  objectName := "vm01"  
-  slaName := "Bronze"
-  objectType := "vmware"
+	/*=============================================================
+	  # Example of protecting a VMware Virtual Machine
+	  =============================================================*/
 
-  # Assign VM to SLA Domain
-  rubrik.AssignSLA(objectName, objectType, slaName)
+	// Set Function Variables
+	objectName := "vm01"
+	slaName := "Bronze"
+	objectType := "vmware"
 
-  #=============================================================
-  # Example of taking an On-Demand Snapshot of a VMware VM
-  #=============================================================
+	// Assign VM to SLA Domain
+	rubrik.AssignSLA(objectName, objectType, slaName)
 
-  # Set Function Variables
-  vmName := "vm02"  
-  slaName := "current"
-  objectType := "vmware"
+	/*=============================================================
+	  # Example of taking an On-Demand Snapshot of a VMware VM
+	  =============================================================*/
 
-  # Take On-Demand Snapshot of VM
-  rubrik.OnDemandSnapshotVM(vmName, objectType, slaName)
+	// Set Function Variables
+	vmName := "vm02"
+	slaName := "current"
+	objectType := "vmware"
 
-  #=============================================================
-  # Example using a GET API call to obtain VM info
-  #=============================================================  
+	// Take On-Demand Snapshot of VM
+	rubrik.OnDemandSnapshotVM(vmName, objectType, slaName)
 
-  vmName := "vm03"  
-  objectType := "vmware"  
-  vmID := rubrik.ObjectID(vmName, objectType)  
+	/*=============================================================
+	  # Example using a GET API call to obtain VM info
+	  =============================================================*/
 
-  # Create the API endpoint address based on VM ID  
-  apiPath := fmt.Sprintf("/vmware/vm/%s", vmID)  
+	vmName := "vm03"
+	objectType := "vmware"
+	vmID := rubrik.ObjectID(vmName, objectType)
 
-  # Send the GET request via API and save the response  
-  vmInfo := rubrik.Get("v1", apiPath)  
+	// Create the API endpoint address based on VM ID
+	apiPath := fmt.Sprintf("/vmware/vm/%s", vmID)
 
-  # Loop through the API response and print desired values  
+	// Send the GET request via API and save the response
+	vmInfo := rubrik.Get("v1", apiPath)
 
-  for key, value := range vmInfo.(map[string]interface{}) {    
-    switch t := value.(type) {    
-      case string:      
-        fmt.Printf("%v: %v\n", key, t)    
-      case float64:      
-        fmt.Printf("%v: %v\n", key, t)    
-      case bool:      
-        fmt.Printf("%v: %v\n", key, t)    
-      }  
-    }
+	// Loop through the API response and print desired values
+
+	for key, value := range vmInfo.(map[string]interface{}) {
+		switch t := value.(type) {
+		case string:
+			fmt.Printf("%v: %v\n", key, t)
+		case float64:
+			fmt.Printf("%v: %v\n", key, t)
+		case bool:
+			fmt.Printf("%v: %v\n", key, t)
+		}
+	}
 }
 ```
 
