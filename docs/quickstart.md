@@ -259,9 +259,13 @@ It is suggested to use a quality editor to create and modify your Go code. Below
 
 Using the [Go extension for Visual Studio Code](https://code.visualstudio.com/docs/languages/go), you get language features like IntelliSense, code navigation, symbol search, bracket matching, snippets and many more that will help you in Golang development. Additionally, the use of a native lint tool helps discover and remediate syntax errors.
 
+![VS Code](image1.png)
+
 #### Git for Windows
 
 [Git for Windows](https://gitforwindows.org/) focuses on offering a lightweight, native set of tools that bring the full feature set of the Git SCM to Windows while providing appropriate user interfaces for experienced Git users and novices alike.
+
+![Git for Windows](image2.png)
 
 #### Creating a Development Workspace
 
