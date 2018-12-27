@@ -1,8 +1,20 @@
+// // Copyright 2018 Rubrik, Inc.
+// //
+// // Licensed under the Apache License, Version 2.0 (the "License");
+// // you may not use this file except in compliance with the License.
+// // You may obtain a copy of the License prop
+// //  http://www.apache.org/licenses/LICENSE-2.0
+// //
+// // Unless required by applicable law or agreed to in writing, software
+// // distributed under the License is distributed on an "AS IS" BASIS,
+// // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// // See the License for the specific language governing permissions and
+// // limitations under the License.
+
 package rubrikcdm
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 	"strings"
 )
@@ -27,11 +39,14 @@ import (
 //
 // The function will return one of the following:
 //	No change required. Cloud native source with access key '{awsAccessKey}' is already configured on the Rubrik cluster.
-//
+// //
 //	The full API response for POST /internal/aws/account.
-func (c *Credentials) AddAWSNativeAccount(awsAccountName, awsAccessKey, awsSecretKey string, awsRegions []string, regionalBoltNetworkConfigs interface{}, timeout ...int) interface{} {
+func (c *Credentials) AddAWSNativeAccount(awsAccountName, awsAccessKey, awsSecretKey string, awsRegions []string, regionalBoltNetworkConfigs interface{}, timeout ...int) (interface{}, error) {
 
-	c.ClusterVersionCheck(4.2)
+	minimumClusterVersion := c.ClusterVersionCheck(4.2)
+	if minimumClusterVersion != nil {
+		return nil, minimumClusterVersion
+	}
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -57,30 +72,37 @@ func (c *Credentials) AddAWSNativeAccount(awsAccountName, awsAccessKey, awsSecre
 
 	for _, region := range awsRegions {
 		if validAWSRegions[region] == false {
-			log.Fatalf(fmt.Sprintf("Error: '%s' is not a valid AWS Region.", region))
+			return nil, fmt.Errorf("'%s' is not a valid AWS Region", region)
 		}
 
 	}
 
-	cloudNativeOnCluster := c.Get("internal", "/aws/account", httpTimeout).(map[string]interface{})["data"]
+	cloudNativeOnCluster, err := c.Get("internal", "/aws/account", httpTimeout)
+	if err != nil {
+		return nil, err
+	}
 
-	if len(cloudNativeOnCluster.([]interface{})) > 0 {
+	if len(cloudNativeOnCluster.(map[string]interface{})["data"].([]interface{})) > 0 {
 		var currentAWSAccountName string
 		var currentAWSConfigID string
-		for _, v := range cloudNativeOnCluster.([]interface{}) {
+		for _, v := range cloudNativeOnCluster.(map[string]interface{})["data"].([]interface{}) {
 			currentAWSAccountName = (v.(interface{}).(map[string]interface{})["name"].(string))
 			currentAWSConfigID = (v.(interface{}).(map[string]interface{})["id"].(string))
 
 		}
 
 		// TODO - Add additional logic checks for the region and bolt configs
-		currentAccessKey := c.Get("internal", fmt.Sprintf("/aws/account/%s", currentAWSConfigID), httpTimeout).(interface{}).(map[string]interface{})["accessKey"].(string)
-		if currentAccessKey == awsAccessKey {
-			return fmt.Sprintf("No change required. Cloud native source with access key '%s' is already configured on the Rubrik cluster.", awsAccessKey)
+		currentAccessKey, err := c.Get("internal", fmt.Sprintf("/aws/account/%s", currentAWSConfigID), httpTimeout)
+		if err != nil {
+			return nil, err
+		}
+
+		if currentAccessKey.(interface{}).(map[string]interface{})["accessKey"].(string) == awsAccessKey {
+			return fmt.Sprintf("No change required. Cloud native source with access key '%s' is already configured on the Rubrik cluster.", awsAccessKey), nil
 		}
 
 		if currentAWSAccountName == awsAccountName {
-			log.Fatalf(fmt.Sprintf("Error: A Cloud native source with name '%s' already exists. Please enter a unique 'awsAccountName'.", awsAccountName))
+			return nil, fmt.Errorf("A Cloud native source with name '%s' already exists. Please enter a unique 'awsAccountName'", awsAccountName)
 		}
 
 	}
@@ -93,7 +115,12 @@ func (c *Credentials) AddAWSNativeAccount(awsAccountName, awsAccessKey, awsSecre
 
 	config["regionalBoltNetworkConfigs"] = regionalBoltNetworkConfigs
 
-	return c.Post("internal", "/aws/account", config, httpTimeout)
+	apiRequest, err := c.Post("internal", "/aws/account", config, httpTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	return apiRequest, nil
 
 }
 
@@ -112,7 +139,7 @@ func (c *Credentials) AddAWSNativeAccount(awsAccountName, awsAccessKey, awsSecre
 //	- No change required. The '{archiveName}' archive location is already configured on the Rubrik cluster.
 //
 //	- The full API response for POST /internal/archive/object_store.
-func (c *Credentials) AWSS3CloudOutRSA(awsBucketName, storageClass, archiveName, awsRegion, awsAccessKey, awsSecretKey, rsaKey string, timeout ...int) interface{} {
+func (c *Credentials) AWSS3CloudOutRSA(awsBucketName, storageClass, archiveName, awsRegion, awsAccessKey, awsSecretKey, rsaKey string, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -143,11 +170,11 @@ func (c *Credentials) AWSS3CloudOutRSA(awsBucketName, storageClass, archiveName,
 	}
 
 	if validAWSRegions[awsRegion] == false {
-		log.Fatalf("Error: %s is not a valid AWS Region.", awsRegion)
+		return nil, fmt.Errorf("%s is not a valid AWS Region", awsRegion)
 	}
 
 	if validStorageClass[storageClass] == false {
-		log.Fatalf("Error: %s is not a valid 'storageClass'. Please use 'standard', 'standard_ia', or 'reduced_redundancy'.", storageClass)
+		return nil, fmt.Errorf("%s is not a valid 'storageClass'. Please use 'standard', 'standard_ia', or 'reduced_redundancy'", storageClass)
 	}
 
 	config := map[string]string{}
@@ -169,27 +196,34 @@ func (c *Credentials) AWSS3CloudOutRSA(awsBucketName, storageClass, archiveName,
 	redactedConfig["accessKey"] = awsAccessKey
 	redactedConfig["objectStoreType"] = "S3"
 
-	archivesOnCluster := c.Get("internal", "/archive/object_store", httpTimeout).(map[string]interface{})["data"]
+	archivesOnCluster, err := c.Get("internal", "/archive/object_store", httpTimeout)
+	if err != nil {
+		return nil, err
+	}
 
-	for _, v := range archivesOnCluster.([]interface{}) {
+	for _, v := range archivesOnCluster.(map[string]interface{})["data"].([]interface{}) {
 		archiveDefinition := (v.(interface{}).(map[string]interface{})["definition"])
 		delete(archiveDefinition.(map[string]interface{}), "definition")
 
 		archivePresent := reflect.DeepEqual(redactedConfig, archiveDefinition)
 
 		if archivePresent {
-			return fmt.Sprintf("No change required. The '%s' archive location is already configured on the Rubrik cluster.", archiveName)
+			return fmt.Sprintf("No change required. The '%s' archive location is already configured on the Rubrik cluster.", archiveName), nil
 		}
 
 		if archiveDefinition.(map[string]interface{})["objectStoreType"] == "S3" && archiveDefinition.(map[string]interface{})["name"] == archiveName {
 
-			log.Fatalf(fmt.Sprintf("Error: An archive location with the name '%s' already exists. Please enter a unique 'archiveName'", archiveName))
-
+			return nil, fmt.Errorf("An archive location with the name '%s' already exists. Please enter a unique 'archiveName'", archiveName)
 		}
 
 	}
 
-	return c.Post("internal", "/archive/object_store", config, httpTimeout)
+	apiRequest, err := c.Post("internal", "/archive/object_store", config, httpTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	return apiRequest, nil
 }
 
 // AWSS3CloudOutKMS configures a new AWS S3 archive target using a AWS KMS Master Key ID for encryption.
@@ -207,7 +241,7 @@ func (c *Credentials) AWSS3CloudOutRSA(awsBucketName, storageClass, archiveName,
 //	- No change required. The '{archiveName}' archive location is already configured on the Rubrik cluster.
 //
 //	- The full API response for POST /internal/archive/object_store/{archiveID}
-func (c *Credentials) AWSS3CloudOutKMS(awsBucketName, storageClass, archiveName, awsRegion, awsAccessKey, awsSecretKey, kmsMasterKeyID string, timeout ...int) interface{} {
+func (c *Credentials) AWSS3CloudOutKMS(awsBucketName, storageClass, archiveName, awsRegion, awsAccessKey, awsSecretKey, kmsMasterKeyID string, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -238,11 +272,11 @@ func (c *Credentials) AWSS3CloudOutKMS(awsBucketName, storageClass, archiveName,
 	}
 
 	if validAWSRegions[awsRegion] == false {
-		log.Fatalf("Error: %s is not a valid AWS Region.", awsRegion)
+		return nil, fmt.Errorf("%s is not a valid AWS Region", awsRegion)
 	}
 
 	if validStorageClass[storageClass] == false {
-		log.Fatalf("Error: %s is not a valid 'storageClass'. Please use 'standard', 'standard_ia', or 'reduced_redundancy'.", storageClass)
+		return nil, fmt.Errorf("%s is not a valid 'storageClass'. Please use 'standard', 'standard_ia', or 'reduced_redundancy'", storageClass)
 	}
 
 	config := map[string]string{}
@@ -264,27 +298,33 @@ func (c *Credentials) AWSS3CloudOutKMS(awsBucketName, storageClass, archiveName,
 	redactedConfig["accessKey"] = awsAccessKey
 	redactedConfig["objectStoreType"] = "S3"
 
-	archivesOnCluster := c.Get("internal", "/archive/object_store", httpTimeout).(map[string]interface{})["data"]
+	archivesOnCluster, err := c.Get("internal", "/archive/object_store", httpTimeout)
+	if err != nil {
+		return nil, err
+	}
 
-	for _, v := range archivesOnCluster.([]interface{}) {
+	for _, v := range archivesOnCluster.(map[string]interface{})["data"].([]interface{}) {
 		archiveDefinition := (v.(interface{}).(map[string]interface{})["definition"])
 		delete(archiveDefinition.(map[string]interface{}), "definition")
 
 		archivePresent := reflect.DeepEqual(redactedConfig, archiveDefinition)
 
 		if archivePresent {
-			return fmt.Sprintf("No change required. The '%s' archive location is already configured on the Rubrik cluster.", archiveName)
+			return fmt.Sprintf("No change required. The '%s' archive location is already configured on the Rubrik cluster.", archiveName), nil
 		}
 
 		if archiveDefinition.(map[string]interface{})["objectStoreType"] == "S3" && archiveDefinition.(map[string]interface{})["name"] == archiveName {
-
-			log.Fatalf(fmt.Sprintf("Error: An archive location with the name '%s' already exists. Please enter a unique 'archiveName'", archiveName))
-
+			return nil, fmt.Errorf("An archive location with the name '%s' already exists. Please enter a unique 'archiveName'", archiveName)
 		}
 
 	}
 
-	return c.Post("internal", "/archive/object_store", config, httpTimeout)
+	apiRequest, err := c.Post("internal", "/archive/object_store", config, httpTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	return apiRequest, nil
 }
 
 // AWSS3CloudOn provides the ability to convert a vSphere virtual machines snapshot, an archived snapshot, or a replica into an Amazon Machine Image (AMI)
@@ -294,7 +334,7 @@ func (c *Credentials) AWSS3CloudOutKMS(awsBucketName, storageClass, archiveName,
 //	- No change required. The '{archiveName}' archive location is already configured for CloudOn.
 //
 //	- The full API response for PATCH /internal/archive/object_store.
-func (c *Credentials) AWSS3CloudOn(archiveName, vpcID, subnetID, securityGroupID string, timeout ...int) interface{} {
+func (c *Credentials) AWSS3CloudOn(archiveName, vpcID, subnetID, securityGroupID string, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -304,27 +344,34 @@ func (c *Credentials) AWSS3CloudOn(archiveName, vpcID, subnetID, securityGroupID
 	config["defaultComputeNetworkConfig"].(map[string]interface{})["vNetId"] = vpcID
 	config["defaultComputeNetworkConfig"].(map[string]interface{})["securityGroupId"] = securityGroupID
 
-	archivesOnCluster := c.Get("internal", "/archive/object_store", httpTimeout).(map[string]interface{})["data"]
+	archivesOnCluster, err := c.Get("internal", "/archive/object_store", httpTimeout)
+	if err != nil {
+		return nil, err
+	}
 
-	for _, v := range archivesOnCluster.([]interface{}) {
+	for _, v := range archivesOnCluster.(map[string]interface{})["data"].([]interface{}) {
 		archiveDefinition := (v.(interface{}).(map[string]interface{})["definition"])
 
 		if archiveDefinition.(map[string]interface{})["objectStoreType"] == "S3" && archiveDefinition.(map[string]interface{})["name"] == archiveName {
 
 			archivePresent := reflect.DeepEqual(archiveDefinition.(map[string]interface{})["defaultComputeNetworkConfig"], config["defaultComputeNetworkConfig"])
 			if archivePresent {
-				return fmt.Sprintf("No change required. The '%s' archive location is already configured for CloudOn.", archiveName)
+				return fmt.Sprintf("No change required. The '%s' archive location is already configured for CloudOn.", archiveName), nil
 
 			}
 
 			archiveID := (v.(interface{}).(map[string]interface{})["id"])
-			return c.Patch("internal", fmt.Sprintf("/archive/object_store/%s", archiveID), config, httpTimeout)
+			apiRequest, err := c.Patch("internal", fmt.Sprintf("/archive/object_store/%s", archiveID), config, httpTimeout)
+			if err != nil {
+				return nil, err
+			}
+
+			return apiRequest, err
 
 		}
 
 	}
-	log.Fatalf(fmt.Sprintf("Error: The Rubrik cluster does not have an archive location named '%s'.", archiveName))
-	return ""
+	return nil, fmt.Errorf("The Rubrik cluster does not have an archive location named '%s'", archiveName)
 
 }
 
@@ -338,7 +385,7 @@ func (c *Credentials) AWSS3CloudOn(archiveName, vpcID, subnetID, securityGroupID
 //	- No change required. The '{archiveName}' archive location is already configured on the Rubrik cluster.
 //
 //	- The full API response for POST /internal/archive/object_store.
-func (c *Credentials) AzureCloudOut(container, azureAccessKey, storageAccountName, archiveName, instanceType, rsaKey string, timeout ...int) interface{} {
+func (c *Credentials) AzureCloudOut(container, azureAccessKey, storageAccountName, archiveName, instanceType, rsaKey string, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -350,7 +397,7 @@ func (c *Credentials) AzureCloudOut(container, azureAccessKey, storageAccountNam
 	}
 
 	if validInstanceTypes[instanceType] == false {
-		log.Fatalf(fmt.Sprintf("Error: '%s' is not a valid Azure Instance Type. Valid choices are 'default', 'china', 'germany', or 'government'", instanceType))
+		return nil, fmt.Errorf("'%s' is not a valid Azure Instance Type. Valid choices are 'default', 'china', 'germany', or 'government'", instanceType)
 	}
 
 	config := map[string]string{}
@@ -384,9 +431,12 @@ func (c *Credentials) AzureCloudOut(container, azureAccessKey, storageAccountNam
 		redactedConfig["endpoint"] = "core.chinacloudapi.cn"
 	}
 
-	archivesOnCluster := c.Get("internal", "/archive/object_store", httpTimeout).(map[string]interface{})["data"]
+	archivesOnCluster, err := c.Get("internal", "/archive/object_store", httpTimeout)
+	if err != nil {
+		return nil, err
+	}
 
-	for _, v := range archivesOnCluster.([]interface{}) {
+	for _, v := range archivesOnCluster.(map[string]interface{})["data"].([]interface{}) {
 		archiveDefinition := (v.(interface{}).(map[string]interface{})["definition"])
 		delete(archiveDefinition.(map[string]interface{}), "defaultComputeNetworkConfig")
 		delete(archiveDefinition.(map[string]interface{}), "isComputeEnabled")
@@ -396,18 +446,21 @@ func (c *Credentials) AzureCloudOut(container, azureAccessKey, storageAccountNam
 		archivePresent := reflect.DeepEqual(redactedConfig, archiveDefinition)
 
 		if archivePresent {
-			return fmt.Sprintf("No change required. The '%s' archive location is already configured on the Rubrik cluster.", archiveName)
+			return fmt.Sprintf("No change required. The '%s' archive location is already configured on the Rubrik cluster.", archiveName), nil
 		}
 
 		if archiveDefinition.(map[string]interface{})["objectStoreType"] == "Azure" && archiveDefinition.(map[string]interface{})["name"] == archiveName {
-
-			log.Fatalf(fmt.Sprintf("Error: An arhive location with the name '%s' already exists. Please enter a unique 'archiveName'", archiveName))
-
+			return nil, fmt.Errorf("An arhive location with the name '%s' already exists. Please enter a unique 'archiveName'", archiveName)
 		}
 
 	}
 
-	return c.Post("internal", "/archive/object_store", config, httpTimeout)
+	apiRequest, err := c.Post("internal", "/archive/object_store", config, httpTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	return apiRequest, nil
 
 }
 
@@ -423,11 +476,9 @@ func (c *Credentials) AzureCloudOut(container, azureAccessKey, storageAccountNam
 //	- No change required. The '{archiveName}' archive location is already configured for CloudOn.
 //
 //	- The full API response for PATCH /internal/archive/object_store.
-func (c *Credentials) AzureCloudOn(archiveName, container, storageAccountName, applicationID, applicationKey, directoryID, region, virtualNetworkID, subnetName, securityGroupID string, timeout ...int) interface{} {
+func (c *Credentials) AzureCloudOn(archiveName, container, storageAccountName, applicationID, applicationKey, directoryID, region, virtualNetworkID, subnetName, securityGroupID string, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
-
-	fmt.Println(httpTimeout)
 
 	validRegions := map[string]bool{
 		"westus":             true,
@@ -459,7 +510,7 @@ func (c *Credentials) AzureCloudOn(archiveName, container, storageAccountName, a
 	}
 
 	if validRegions[region] == false {
-		log.Fatalf(fmt.Sprintf("Error: '%s' is not a valid Azure Region.", region))
+		return nil, fmt.Errorf("'%s' is not a valid Azure Region", region)
 	}
 
 	config := map[string]interface{}{}
@@ -504,26 +555,32 @@ func (c *Credentials) AzureCloudOn(archiveName, container, storageAccountName, a
 	redactedConfig["defaultComputeNetworkConfig"].(map[string]string)["vNetId"] = virtualNetworkID
 	redactedConfig["defaultComputeNetworkConfig"].(map[string]string)["securityGroupId"] = securityGroupID
 
-	archivesOnCluster := c.Get("internal", "/archive/object_store", httpTimeout).(map[string]interface{})["data"]
+	archivesOnCluster, err := c.Get("internal", "/archive/object_store", httpTimeout)
+	if err != nil {
+		return nil, err
+	}
 
-	for _, v := range archivesOnCluster.([]interface{}) {
+	for _, v := range archivesOnCluster.(map[string]interface{})["data"].([]interface{}) {
 		archiveDefinition := (v.(interface{}).(map[string]interface{})["definition"])
 
 		if archiveDefinition.(map[string]interface{})["objectStoreType"] == "Azure" && archiveDefinition.(map[string]interface{})["name"] == archiveName {
 
 			archivePresent := reflect.DeepEqual(archiveDefinition.(map[string]interface{})["defaultComputeNetworkConfig"], config["defaultComputeNetworkConfig"])
 			if archivePresent {
-				return fmt.Sprintf("No change required. The '%s' archive location is already configured for CloudOn.", archiveName)
-
+				return fmt.Sprintf("No change required. The '%s' archive location is already configured for CloudOn.", archiveName), nil
 			}
 
 			archiveID := (v.(interface{}).(map[string]interface{})["id"])
-			return c.Patch("internal", fmt.Sprintf("/archive/object_store/%s", archiveID), config, httpTimeout)
+			apiRequest, err := c.Patch("internal", fmt.Sprintf("/archive/object_store/%s", archiveID), config, httpTimeout)
+			if err != nil {
+				return nil, err
+			}
+
+			return apiRequest, nil
 
 		}
 
 	}
-	log.Fatalf(fmt.Sprintf("Error: The Rubrik cluster does not have an archive location named '%s'.", archiveName))
-	return ""
+	return nil, fmt.Errorf("The Rubrik cluster does not have an archive location named '%s'", archiveName)
 
 }
