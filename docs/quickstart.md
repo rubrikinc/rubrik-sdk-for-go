@@ -133,8 +133,8 @@ func main() {
 
 	// Set Function Variables
 	objectName := "vm01"
-	slaName := "Bronze"
 	objectType := "vmware"
+	slaName := "Bronze"
 
 	// Assign VM to SLA Domain
 	rubrik.AssignSLA(objectName, objectType, slaName)
@@ -145,8 +145,8 @@ func main() {
 
 	// Set Function Variables
 	vmName := "vm02"
-	slaName := "current"
 	objectType := "vmware"
+	slaName := "current"
 
 	// Take On-Demand Snapshot of VM
 	rubrik.OnDemandSnapshotVM(vmName, objectType, slaName)
