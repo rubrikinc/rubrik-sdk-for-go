@@ -52,11 +52,11 @@ Authenticate by Providing Username and Password
 Although the use of environment variables are recommended, there may be scenarios where directly sending credentials to the `rubrikcdm.Connect()` function as parameters makes sense. To pass connection and credential information, simply call the `rubrikcdm.Connect()` function, passing the node IP, username, and password as follows:
 
 ```
-node_ip := "192.168.0.100"
+nodeIp := "192.168.0.100"
 username := "user@domain.com"
 password := "SecretPassword"
 
-rubrik := rubrikcdm.Connect(node_ip, username, password)
+rubrik := rubrikcdm.Connect(nodeIp, username, password)
 ```
 
 ## Connecting to a Rubrik Cluster
@@ -79,11 +79,11 @@ rubrik := rubrikcdm.ConnectEnv()
 Any subsequent calls to methods or functions within the rubrikcdm package are now executed through the context of the variable used to store the response from the ConnectEnv() method. For example, to retrieve the VMware VMs within the Gold SLA Domain the following code is used:
 
 ```go
-import fmt
+import "fmt"
 import "github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
 
 rubrik := rubrikcdm.ConnectEnv()
-fmt.Println rubrik.GetSLAObjects("Gold","vmware")
+fmt.Println(rubrik.GetSLAObjects("Gold","vmware"))
 ```
 
 For a full list of functions, methods, and their associated arguments see the official [Rubrik SDK for Go documentation](https://godoc.org/github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm).
@@ -133,8 +133,8 @@ func main() {
 
 	// Set Function Variables
 	objectName := "vm01"
-	slaName := "Bronze"
 	objectType := "vmware"
+	slaName := "Bronze"
 
 	// Assign VM to SLA Domain
 	rubrik.AssignSLA(objectName, objectType, slaName)
@@ -145,8 +145,8 @@ func main() {
 
 	// Set Function Variables
 	vmName := "vm02"
-	slaName := "current"
 	objectType := "vmware"
+	slaName := "current"
 
 	// Take On-Demand Snapshot of VM
 	rubrik.OnDemandSnapshotVM(vmName, objectType, slaName)
@@ -248,6 +248,26 @@ Rubrik prides itself upon its API-first architecture, ensuring everything availa
 The Rubrik SDK for Go is hosted on a public repository on GitHub. If you would like to get involved and contribute to the SDK please follow the below guidelines. The steps below require changing your `GOPATH` environment variable. Make note of the value of the `GOPATH` variable before changing it. You will want to revert `GOPATH` to its original value once you are finished adding code to the Rubrik SDK for Go.
 
 ### Common Environment Setup - Microsoft Windows
+
+It is suggested to use a quality editor to create and modify your Go code. Below is a list of software to install if this is your first time.
+
+#### Microsoft Visual Studio Code editor
+
+[Visual Studio Code](https://code.visualstudio.com/) is a lightweight but powerful source code editor which runs on your desktop and is available for Windows, macOS and Linux. It comes with built-in support for JavaScript, TypeScript and Node.js and has a rich ecosystem of extensions for other languages (such as C++, C#, Java, Python, PHP, Go) and runtimes (such as .NET and Unity).
+
+#### Go in Visual Studio Code
+
+Using the [Go extension for Visual Studio Code](https://code.visualstudio.com/docs/languages/go), you get language features like IntelliSense, code navigation, symbol search, bracket matching, snippets and many more that will help you in Golang development. Additionally, the use of a native lint tool helps discover and remediate syntax errors.
+
+![VS Code](image1.png)
+
+#### Git for Windows
+
+[Git for Windows](https://gitforwindows.org/) focuses on offering a lightweight, native set of tools that bring the full feature set of the Git SCM to Windows while providing appropriate user interfaces for experienced Git users and novices alike.
+
+![Git for Windows](image2.png)
+
+#### Creating a Development Workspace
 
 1. Create a new directory for development work and change to that directory
 ```
