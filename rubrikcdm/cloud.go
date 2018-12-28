@@ -196,6 +196,9 @@ func (c *Credentials) AWSS3CloudOutRSA(awsBucketName, storageClass, archiveName,
 	redactedConfig["accessKey"] = awsAccessKey
 	redactedConfig["objectStoreType"] = "S3"
 
+	fmt.Println(redactedConfig)
+	fmt.Println()
+
 	archivesOnCluster, err := c.Get("internal", "/archive/object_store", httpTimeout)
 	if err != nil {
 		return nil, err
@@ -204,6 +207,10 @@ func (c *Credentials) AWSS3CloudOutRSA(awsBucketName, storageClass, archiveName,
 	for _, v := range archivesOnCluster.(map[string]interface{})["data"].([]interface{}) {
 		archiveDefinition := (v.(interface{}).(map[string]interface{})["definition"])
 		delete(archiveDefinition.(map[string]interface{}), "definition")
+		delete(archiveDefinition.(map[string]interface{}), "isComputeEnabled")
+		delete(archiveDefinition.(map[string]interface{}), "isConsolidationEnabled")
+
+		fmt.Println(archiveDefinition)
 
 		archivePresent := reflect.DeepEqual(redactedConfig, archiveDefinition)
 
@@ -306,6 +313,8 @@ func (c *Credentials) AWSS3CloudOutKMS(awsBucketName, storageClass, archiveName,
 	for _, v := range archivesOnCluster.(map[string]interface{})["data"].([]interface{}) {
 		archiveDefinition := (v.(interface{}).(map[string]interface{})["definition"])
 		delete(archiveDefinition.(map[string]interface{}), "definition")
+		delete(archiveDefinition.(map[string]interface{}), "isComputeEnabled")
+		delete(archiveDefinition.(map[string]interface{}), "isConsolidationEnabled")
 
 		archivePresent := reflect.DeepEqual(redactedConfig, archiveDefinition)
 
