@@ -129,13 +129,14 @@ func (c *Credentials) AssignSLA(objectName, objectType, slaName string, timeout 
 	}
 
 	var slaID string
+	var err error
 	switch slaName {
 	case "do not protect":
 		slaID = "UNPROTECTED"
 	case "clear":
 		slaID = "INHERIT"
 	default:
-		slaID, err := c.ObjectID(slaName, "sla")
+		slaID, err = c.ObjectID(slaName, "sla")
 		if err != nil {
 			return nil, err
 		}
