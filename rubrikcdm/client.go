@@ -127,6 +127,10 @@ func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config
 		request, _ = http.NewRequest(callType, requestURL, bytes.NewBuffer(convertedConfig))
 	case "DELETE":
 		request, _ = http.NewRequest(callType, requestURL, nil)
+	case "JOB_STATUS":
+		// Overwrite the default requstURL with the job status url and convert to string
+		requestURL = config.(string)
+		request, _ = http.NewRequest("GET", requestURL, nil)
 	}
 	if len(c.Username) != 0 {
 		request.SetBasicAuth(c.Username, c.Password)
@@ -287,6 +291,37 @@ func (c *Credentials) Get(apiVersion, apiEndpoint string, timeout ...int) (inter
 	}
 
 	return apiRequest, nil
+
+}
+
+// JobStatus performs a GET operation to monitor the status of a specific Rubrik job.
+func (c *Credentials) JobStatus(jobStatusURL string, timeout ...int) (interface{}, error) {
+
+	httpTimeout := httpTimeout(timeout)
+
+	// Dummy place holder values to pass validation
+	apiVersion := "v1"
+	apiEndpoint := "/placeholder"
+
+	for {
+		apiRequest, err := c.commonAPI("JOB_STATUS", apiVersion, apiEndpoint, jobStatusURL, httpTimeout)
+		if err != nil {
+			return nil, err
+		}
+
+		jobStatus := apiRequest.(map[string]interface{})["status"].(string)
+
+		switch jobStatus {
+		case "SUCCEEDED":
+			return apiRequest, nil
+		case "QUEUED":
+			time.Sleep(10 * time.Second)
+		case "RUNNING":
+			time.Sleep(10 * time.Second)
+		default:
+			return nil, errors.New("Job failed.")
+		}
+	}
 
 }
 
