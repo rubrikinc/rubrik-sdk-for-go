@@ -19,16 +19,30 @@ import (
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/mitchellh/mapstructure"
 )
+
+// ClusterVersion corresponds to /v1/cluster/me/version
+type ClusterVersion struct {
+	Version string `json:"version"`
+}
 
 // ClusterVersion returns the CDM version of the Rubrik cluster.
 func (c *Credentials) ClusterVersion() (string, error) {
-	apiRequest, err := c.Get("v1", "/cluster/me")
-
+	apiRequest, err := c.Get("v1", "/cluster/me/version")
 	if err != nil {
 		return "", err
 	}
-	return apiRequest.(map[string]interface{})["version"].(string), nil
+
+	// Convert the API Response (map[string]interface{}) to a struct
+	var currentClusterVersion ClusterVersion
+	mapErr := mapstructure.Decode(apiRequest, &currentClusterVersion)
+	if mapErr != nil {
+		return "", mapErr
+	}
+
+	return currentClusterVersion.Version, nil
 }
 
 // ClusterVersionCheck is used to determine if the Rubrik cluster is using running an earlier release than the provided CDM "clusterVersion".

@@ -17,7 +17,104 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
+
+	"github.com/mitchellh/mapstructure"
 )
+
+// CloudObjectStore represents the JSON response for GET /internal/archive/object_store
+type CloudObjectStore struct {
+	HasMore bool `json:"hasMore"`
+	Data    []struct {
+		ID         string `json:"id"`
+		Definition struct {
+			ObjectStoreType             string `json:"objectStoreType"`
+			Name                        string `json:"name"`
+			AccessKey                   string `json:"accessKey"`
+			Bucket                      string `json:"bucket"`
+			PemFileContent              string `json:"pemFileContent"`
+			KmsMasterKeyID              string `json:"kmsMasterKeyId"`
+			DefaultRegion               string `json:"defaultRegion"`
+			Endpoint                    string `json:"endpoint"`
+			NumBuckets                  int    `json:"numBuckets"`
+			IsComputeEnabled            bool   `json:"isComputeEnabled"`
+			IsConsolidationEnabled      bool   `json:"isConsolidationEnabled"`
+			DefaultComputeNetworkConfig struct {
+				SubnetID        string `json:"subnetId"`
+				VNetID          string `json:"vNetId"`
+				SecurityGroupID string `json:"securityGroupId"`
+				ResourceGroupID string `json:"resourceGroupId"`
+			} `json:"defaultComputeNetworkConfig"`
+			StorageClass        string `json:"storageClass"`
+			AzureComputeSummary struct {
+				TenantID                         string `json:"tenantId"`
+				SubscriptionID                   string `json:"subscriptionId"`
+				ClientID                         string `json:"clientId"`
+				Region                           string `json:"region"`
+				GeneralPurposeStorageAccountName string `json:"generalPurposeStorageAccountName"`
+				ContainerName                    string `json:"containerName"`
+				Environment                      string `json:"environment"`
+			} `json:"azureComputeSummary"`
+		} `json:"definition"`
+		GlacierStatus struct {
+			RetrievalTier   string `json:"retrievalTier"`
+			VaultLockStatus struct {
+				FileLockPeriodInDays int       `json:"fileLockPeriodInDays"`
+				Status               string    `json:"status"`
+				ExpiryTime           time.Time `json:"expiryTime"`
+			} `json:"vaultLockStatus"`
+		} `json:"glacierStatus"`
+		ArchivalProxySummary struct {
+			Protocol    string `json:"protocol"`
+			ProxyServer string `json:"proxyServer"`
+			PortNumber  int    `json:"portNumber"`
+			UserName    string `json:"userName"`
+		} `json:"archivalProxySummary"`
+		ComputeProxySummary struct {
+			Protocol    string `json:"protocol"`
+			ProxyServer string `json:"proxyServer"`
+			PortNumber  int    `json:"portNumber"`
+			UserName    string `json:"userName"`
+		} `json:"computeProxySummary"`
+		ReaderLocationSummary struct {
+			State         string    `json:"state"`
+			RefreshedTime time.Time `json:"refreshedTime"`
+		} `json:"readerLocationSummary"`
+	} `json:"data"`
+	Total int `json:"total"`
+}
+
+// DeleteCloudArchivalLocation represents the JSON response for DELETE /internal/archive/location/{id}
+type DeleteCloudArchivalLocation struct {
+	ID        string `json:"id"`
+	Status    string `json:"status"`
+	Progress  int    `json:"progress"`
+	StartTime string `json:"startTime"`
+	EndTime   string `json:"endTime"`
+	NodeID    string `json:"nodeId"`
+	Error     struct {
+		Message string `json:"message"`
+	} `json:"error"`
+	Links []struct {
+		Href string `json:"href"`
+		Rel  string `json:"rel"`
+	} `json:"links"`
+}
+
+// CurrentArchiveLocations represents the JSON response for GET /internal/archive/location
+type CurrentArchiveLocations struct {
+	HasMore bool `json:"hasMore"`
+	Data    []struct {
+		ID              string `json:"id"`
+		Name            string `json:"name"`
+		LocationType    string `json:"locationType"`
+		IsActive        bool   `json:"isActive"`
+		IPAddress       string `json:"ipAddress"`
+		Bucket          string `json:"bucket"`
+		OwnershipStatus string `json:"ownershipStatus"`
+	} `json:"data"`
+	Total int `json:"total"`
+}
 
 // AddAWSNativeAccount enables the management and protection of Amazon Elastic Compute Cloud (Amazon EC2) instances. The "regionalBoltNetworkConfigs"
 // should be a list of dictionaries in the following format:
@@ -139,7 +236,7 @@ func (c *Credentials) AddAWSNativeAccount(awsAccountName, awsAccessKey, awsSecre
 //	- No change required. The '{archiveName}' archive location is already configured on the Rubrik cluster.
 //
 //	- The full API response for POST /internal/archive/object_store.
-func (c *Credentials) AWSS3CloudOutRSA(awsBucketName, storageClass, archiveName, awsRegion, awsAccessKey, awsSecretKey, rsaKey string, timeout ...int) (interface{}, error) {
+func (c *Credentials) AWSS3CloudOutRSA(awsBucketName, storageClass, archiveName, awsRegion, awsAccessKey, awsSecretKey, rsaKey string, timeout ...int) (string, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -170,11 +267,11 @@ func (c *Credentials) AWSS3CloudOutRSA(awsBucketName, storageClass, archiveName,
 	}
 
 	if validAWSRegions[awsRegion] == false {
-		return nil, fmt.Errorf("%s is not a valid AWS Region", awsRegion)
+		return "", fmt.Errorf("%s is not a valid AWS Region", awsRegion)
 	}
 
 	if validStorageClass[storageClass] == false {
-		return nil, fmt.Errorf("%s is not a valid 'storageClass'. Please use 'standard', 'standard_ia', or 'reduced_redundancy'", storageClass)
+		return "", fmt.Errorf("%s is not a valid 'storageClass'. Please use 'standard', 'standard_ia', or 'reduced_redundancy'", storageClass)
 	}
 
 	config := map[string]string{}
@@ -196,41 +293,114 @@ func (c *Credentials) AWSS3CloudOutRSA(awsBucketName, storageClass, archiveName,
 	redactedConfig["accessKey"] = awsAccessKey
 	redactedConfig["objectStoreType"] = "S3"
 
-	fmt.Println(redactedConfig)
-	fmt.Println()
-
-	archivesOnCluster, err := c.Get("internal", "/archive/object_store", httpTimeout)
+	archivesOnCluster, err := c.CloudObjectStore()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	for _, v := range archivesOnCluster.(map[string]interface{})["data"].([]interface{}) {
-		archiveDefinition := (v.(interface{}).(map[string]interface{})["definition"])
-		delete(archiveDefinition.(map[string]interface{}), "definition")
-		delete(archiveDefinition.(map[string]interface{}), "isComputeEnabled")
-		delete(archiveDefinition.(map[string]interface{}), "isConsolidationEnabled")
+	for _, v := range archivesOnCluster.Data {
 
-		fmt.Println(archiveDefinition)
+		// Create a map of the current configuration for easy comparison
+		compareRedactedConfig := map[string]interface{}{}
+		compareRedactedConfig["objectStoreType"] = v.Definition.ObjectStoreType
+		compareRedactedConfig["name"] = v.Definition.Name
+		compareRedactedConfig["accessKey"] = v.Definition.AccessKey
+		compareRedactedConfig["bucket"] = v.Definition.Bucket
+		compareRedactedConfig["defaultRegion"] = v.Definition.DefaultRegion
+		compareRedactedConfig["storageClass"] = v.Definition.StorageClass
 
-		archivePresent := reflect.DeepEqual(redactedConfig, archiveDefinition)
+		archivePresent := reflect.DeepEqual(redactedConfig, compareRedactedConfig)
 
 		if archivePresent {
 			return fmt.Sprintf("No change required. The '%s' archive location is already configured on the Rubrik cluster.", archiveName), nil
 		}
 
-		if archiveDefinition.(map[string]interface{})["objectStoreType"] == "S3" && archiveDefinition.(map[string]interface{})["name"] == archiveName {
-
-			return nil, fmt.Errorf("An archive location with the name '%s' already exists. Please enter a unique 'archiveName'", archiveName)
+		if v.Definition.ObjectStoreType == "S3" && v.Definition.Name == archiveName {
+			return "", fmt.Errorf("An archive location with the name '%s' already exists. Please enter a unique 'archiveName'", archiveName)
 		}
 
 	}
 
 	apiRequest, err := c.Post("internal", "/archive/object_store", config, httpTimeout)
 	if err != nil {
+		return "", err
+	}
+
+	return apiRequest.(map[string]interface{})["jobInstanceId"].(string), nil
+}
+
+// CloudObjectStore retrieves all archive locations configured on the Rubik cluster via /internal/archive/object_store
+func (c *Credentials) CloudObjectStore(timeout ...int) (*CloudObjectStore, error) {
+
+	httpTimeout := httpTimeout(timeout)
+
+	apiArchivesOnCluster, err := c.Get("internal", "/archive/object_store", httpTimeout)
+	if err != nil {
 		return nil, err
 	}
 
-	return apiRequest, nil
+	// Convert the API Response (map[string]interface{}) to a struct
+	var archivesOnCluster CloudObjectStore
+	mapErr := mapstructure.Decode(apiArchivesOnCluster, &archivesOnCluster)
+	if mapErr != nil {
+		return nil, mapErr
+	}
+
+	return &archivesOnCluster, nil
+
+}
+
+// RemoveArchiveLocation A
+func (c *Credentials) RemoveArchiveLocation(archiveName string, timeout ...int) (*DeleteCloudArchivalLocation, error) {
+
+	httpTimeout := httpTimeout(timeout)
+
+	// Search the Rubrik cluster for all current archive locations
+	currentArchivesRequest, err := c.Get("internal", fmt.Sprintf("/archive/location?name=%s", archiveName), httpTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert the API Response (map[string]interface{}) to a struct
+	var currentArchive CurrentArchiveLocations
+	currentArchiveMapErr := mapstructure.Decode(currentArchivesRequest, &currentArchive)
+	if currentArchiveMapErr != nil {
+		return nil, currentArchiveMapErr
+
+	}
+
+	// Get the ID of the archive location
+	var archiveID string
+	for _, v := range currentArchive.Data {
+		if v.Name == archiveName {
+			archiveID = v.ID
+		}
+	}
+
+	if archiveID == "" {
+		return nil, fmt.Errorf("No change required. The Rubrik cluster does not contain a archive location named '%s'", archiveName)
+	}
+
+	// Pause archive activity on the archive location before deleting
+	_, pauseErr := c.Post("internal", fmt.Sprintf("/archive/location/%s/owner/pause", archiveID), httpTimeout)
+	if pauseErr != nil {
+		return nil, pauseErr
+	}
+
+	deleteAPIRequest, err := c.Delete("internal", fmt.Sprintf("/archive/location/%s", archiveID), httpTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert the API Response (map[string]interface{}) to a struct
+	var deleteArchive DeleteCloudArchivalLocation
+	mapErr := mapstructure.Decode(deleteAPIRequest, &deleteArchive)
+	if mapErr != nil {
+		return nil, mapErr
+	}
+
+	return &deleteArchive, nil
+
 }
 
 // AWSS3CloudOutKMS configures a new AWS S3 archive target using a AWS KMS Master Key ID for encryption.
