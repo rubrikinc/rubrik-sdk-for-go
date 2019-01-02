@@ -294,7 +294,7 @@ func (c *Credentials) Get(apiVersion, apiEndpoint string, timeout ...int) (inter
 
 }
 
-// JobStatus performs a GET operation to monitor the status of a specific Rubrik job.
+// JobStatus performs a GET operation to monitor the status of a specific Rubrik job want waits for it's completion.
 func (c *Credentials) JobStatus(jobStatusURL string, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
@@ -318,8 +318,12 @@ func (c *Credentials) JobStatus(jobStatusURL string, timeout ...int) (interface{
 			time.Sleep(10 * time.Second)
 		case "RUNNING":
 			time.Sleep(10 * time.Second)
+		case "FINISHING":
+			time.Sleep(10 * time.Second)
 		default:
-			return nil, errors.New("Job failed.")
+			fmt.Println(jobStatus)
+			fmt.Println(apiRequest)
+			return apiRequest, errors.New("Job failed")
 		}
 	}
 
