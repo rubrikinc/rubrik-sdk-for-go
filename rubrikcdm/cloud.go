@@ -84,8 +84,8 @@ type CloudObjectStore struct {
 	Total int `json:"total"`
 }
 
-// DeleteCloudArchivalLocation represents the JSON response for DELETE /internal/archive/location/{id}
-type DeleteCloudArchivalLocation struct {
+// JobStatus represents the JSON response for DELETE /internal/archive/location/{id}
+type JobStatus struct {
 	ID        string `json:"id"`
 	Status    string `json:"status"`
 	Progress  int    `json:"progress"`
@@ -174,6 +174,23 @@ type UpdateArchiveLocations struct {
 	} `json:"readerLocationSummary"`
 }
 
+type UpdateAWSNative struct {
+	Name                       string   `json:"name"`
+	AccessKey                  string   `json:"accessKey"`
+	Regions                    []string `json:"regions"`
+	RegionalBoltNetworkConfigs []struct {
+		Region          string `json:"region"`
+		VNetID          string `json:"vNetId"`
+		SubnetID        string `json:"subnetId"`
+		SecurityGroupID string `json:"securityGroupId"`
+	} `json:"regionalBoltNetworkConfigs"`
+	DisasterRecoveryArchivalLocationID string `json:"disasterRecoveryArchivalLocationId"`
+	ID                                 string `json:"id"`
+	ConfiguredSLADomainID              string `json:"configuredSlaDomainId"`
+	ConfiguredSLADomainName            string `json:"configuredSlaDomainName"`
+	PrimaryClusterID                   string `json:"primaryClusterId"`
+}
+
 // CurrentAWSAccount represents the JSON response for GET /aws/account
 type CurrentAWSAccount struct {
 	HasMore bool `json:"hasMore"`
@@ -184,23 +201,6 @@ type CurrentAWSAccount struct {
 		Status           string `json:"status"`
 	} `json:"data"`
 	Total int `json:"total"`
-}
-
-// DeleteAWSAccount represents the JSON response for DELETE /aws/account/{id}
-type DeleteAWSAccount struct {
-	ID        string `json:"id"`
-	Status    string `json:"status"`
-	Progress  int    `json:"progress"`
-	StartTime string `json:"startTime"`
-	EndTime   string `json:"endTime"`
-	NodeID    string `json:"nodeId"`
-	Error     struct {
-		Message string `json:"message"`
-	} `json:"error"`
-	Links []struct {
-		Href string `json:"href"`
-		Rel  string `json:"rel"`
-	} `json:"links"`
 }
 
 // CurrentAWSAccountID represents the JSON response for GET /aws/account/{id}
@@ -322,8 +322,77 @@ func (c *Credentials) AddAWSNativeAccount(awsAccountName, awsAccessKey, awsSecre
 		return nil, err
 	}
 
-	return apiRequest, nil
+	// Convert the API Response (map[string]interface{}) to a struct
+	var addAccount JobStatus
+	mapErr := mapstructure.Decode(apiRequest, &addAccount)
+	if mapErr != nil {
+		return nil, mapErr
+	}
 
+	status, err := c.JobStatus(addAccount.Links[0].Href)
+	if err != nil {
+		return nil, err
+	}
+
+	return status, nil
+
+}
+
+// RemoveAWSAccount deletes the specific AWS account from the Rubrik clsuter
+func (c *Credentials) RemoveAWSAccount(archiveName string, deleteExsitingSnapshots bool, timeout ...int) (interface{}, error) {
+
+	httpTimeout := httpTimeout(timeout)
+
+	awsAccountSummary, err := c.AWSAccountSummary(archiveName)
+	if err != nil {
+		return nil, err
+	}
+
+	deleteAPIRequest, err := c.Delete("internal", fmt.Sprintf("/aws/account/%s?delete_existing_snapshots=%t", awsAccountSummary.ID, deleteExsitingSnapshots), httpTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert the API Response (map[string]interface{}) to a struct
+	var deleteAccount JobStatus
+	mapErr := mapstructure.Decode(deleteAPIRequest, &deleteAccount)
+	if mapErr != nil {
+		return nil, mapErr
+	}
+
+	status, err := c.JobStatus(deleteAccount.Links[0].Href)
+	if err != nil {
+		return nil, err
+	}
+
+	return status, nil
+}
+
+// UpdateAWSNativeAccount
+func (c *Credentials) UpdateAWSNativeAccount(archiveName string, config map[string]interface{}, timeout ...int) (*UpdateAWSNative, error) {
+
+	httpTimeout := httpTimeout(timeout)
+
+	awsAccountSummary, err := c.AWSAccountSummary(archiveName)
+	if err != nil {
+		return nil, err
+	}
+
+	patchAPIRequest, err := c.Patch("internal", fmt.Sprintf("/aws/account/%s", awsAccountSummary.ID), config, httpTimeout)
+	if err != nil {
+		fmt.Println("2")
+
+		return nil, err
+	}
+
+	// Convert the API Response (map[string]interface{}) to a struct
+	var patchArchive UpdateAWSNative
+	mapErr := mapstructure.Decode(patchAPIRequest, &patchArchive)
+	if mapErr != nil {
+		return nil, mapErr
+	}
+
+	return &patchArchive, nil
 }
 
 // AWSS3CloudOutRSA configures a new AWS S3 archive target using a RSA Key for encryption.
@@ -499,7 +568,7 @@ func (c *Credentials) AWSAccountSummary(awsAccountName string, timeout ...int) (
 }
 
 // RemoveArchiveLocation delete the archival location from the SLA Domains that reference it and expire all snapshots at the archival location
-func (c *Credentials) RemoveArchiveLocation(archiveName string, timeout ...int) (*DeleteCloudArchivalLocation, error) {
+func (c *Credentials) RemoveArchiveLocation(archiveName string, timeout ...int) (*JobStatus, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -541,43 +610,13 @@ func (c *Credentials) RemoveArchiveLocation(archiveName string, timeout ...int) 
 	}
 
 	// Convert the API Response (map[string]interface{}) to a struct
-	var deleteArchive DeleteCloudArchivalLocation
+	var deleteArchive JobStatus
 	mapErr := mapstructure.Decode(deleteAPIRequest, &deleteArchive)
 	if mapErr != nil {
 		return nil, mapErr
 	}
 
 	return &deleteArchive, nil
-}
-
-// RemoveAWSAccount deletes the specific AWS account from the Rubrik clsuter
-func (c *Credentials) RemoveAWSAccount(archiveName string, deleteExsitingSnapshots bool, timeout ...int) (interface{}, error) {
-
-	httpTimeout := httpTimeout(timeout)
-
-	awsAccountSummary, err := c.AWSAccountSummary(archiveName)
-	if err != nil {
-		return nil, err
-	}
-
-	deleteAPIRequest, err := c.Delete("internal", fmt.Sprintf("/aws/account/%s?delete_existing_snapshots=%t", awsAccountSummary.ID, deleteExsitingSnapshots), httpTimeout)
-	if err != nil {
-		return nil, err
-	}
-
-	// Convert the API Response (map[string]interface{}) to a struct
-	var deleteAccount DeleteAWSAccount
-	mapErr := mapstructure.Decode(deleteAPIRequest, &deleteAccount)
-	if mapErr != nil {
-		return nil, mapErr
-	}
-
-	status, err := c.JobStatus(deleteAccount.Links[0].Href)
-	if err != nil {
-		return nil, err
-	}
-
-	return status, nil
 }
 
 // UpdateCloudArchiveLocation delete the archival location from the SLA Domains that reference it and expire all snapshots at the archival location
@@ -617,7 +656,7 @@ func (c *Credentials) UpdateCloudArchiveLocation(archiveName string, config map[
 
 		return nil, err
 	}
-	fmt.Println("here")
+
 	// Convert the API Response (map[string]interface{}) to a struct
 	var patchArchive UpdateArchiveLocations
 	mapErr := mapstructure.Decode(patchAPIRequest, &patchArchive)
