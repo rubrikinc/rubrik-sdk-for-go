@@ -174,6 +174,7 @@ type UpdateArchiveLocations struct {
 	} `json:"readerLocationSummary"`
 }
 
+// UpdateAWSNative
 type UpdateAWSNative struct {
 	Name                       string   `json:"name"`
 	AccessKey                  string   `json:"accessKey"`
@@ -380,8 +381,6 @@ func (c *Credentials) UpdateAWSNativeAccount(archiveName string, config map[stri
 
 	patchAPIRequest, err := c.Patch("internal", fmt.Sprintf("/aws/account/%s", awsAccountSummary.ID), config, httpTimeout)
 	if err != nil {
-		fmt.Println("2")
-
 		return nil, err
 	}
 
@@ -410,7 +409,7 @@ func (c *Credentials) UpdateAWSNativeAccount(archiveName string, config map[stri
 //	- No change required. The '{archiveName}' archive location is already configured on the Rubrik cluster.
 //
 //	- The full API response for POST /internal/archive/object_store.
-func (c *Credentials) AWSS3CloudOutRSA(awsBucketName, storageClass, archiveName, awsRegion, awsAccessKey, awsSecretKey, rsaKey string, timeout ...int) (string, error) {
+func (c *Credentials) AWSS3CloudOutRSA(awsBucketName, storageClass, archiveName, awsRegion, awsAccessKey, awsSecretKey, rsaKey string, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -500,7 +499,13 @@ func (c *Credentials) AWSS3CloudOutRSA(awsBucketName, storageClass, archiveName,
 		return "", err
 	}
 
-	return apiRequest.(map[string]interface{})["jobInstanceId"].(string), nil
+	status, err := c.JobStatus(fmt.Sprintf("https://%s/api/internal/archive/location/job/connect/%s", c.NodeIP, apiRequest.(map[string]interface{})["jobInstanceId"].(string)))
+	if err != nil {
+		return nil, err
+	}
+
+	return status, nil
+
 }
 
 // CloudObjectStore retrieves all archive locations configured on the Rubik cluster via /internal/archive/object_store
@@ -620,7 +625,7 @@ func (c *Credentials) RemoveArchiveLocation(archiveName string, timeout ...int) 
 }
 
 // UpdateCloudArchiveLocation delete the archival location from the SLA Domains that reference it and expire all snapshots at the archival location
-func (c *Credentials) UpdateCloudArchiveLocation(archiveName string, config map[string]string, timeout ...int) (*UpdateArchiveLocations, error) {
+func (c *Credentials) UpdateCloudArchiveLocation(archiveName string, config map[string]interface{}, timeout ...int) (*UpdateArchiveLocations, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -645,15 +650,12 @@ func (c *Credentials) UpdateCloudArchiveLocation(archiveName string, config map[
 			archiveID = v.ID
 		}
 	}
-	fmt.Println(archiveID)
 	if archiveID == "" {
 		return nil, fmt.Errorf("No change required. The Rubrik cluster does not contain a archive location named '%s'", archiveName)
 	}
 
 	patchAPIRequest, err := c.Patch("internal", fmt.Sprintf("/archive/object_store/%s", archiveID), config, httpTimeout)
 	if err != nil {
-		fmt.Println("2")
-
 		return nil, err
 	}
 
@@ -767,7 +769,13 @@ func (c *Credentials) AWSS3CloudOutKMS(awsBucketName, storageClass, archiveName,
 		return nil, err
 	}
 
-	return apiRequest, nil
+	status, err := c.JobStatus(fmt.Sprintf("https://%s/api/internal/archive/location/job/connect/%s", c.NodeIP, apiRequest.(map[string]interface{})["jobInstanceId"].(string)))
+	if err != nil {
+		return nil, err
+	}
+
+	return status, nil
+
 }
 
 // AWSS3CloudOn provides the ability to convert a vSphere virtual machines snapshot, an archived snapshot, or a replica into an Amazon Machine Image (AMI)
@@ -782,29 +790,26 @@ func (c *Credentials) AWSS3CloudOn(archiveName, vpcID, subnetID, securityGroupID
 	httpTimeout := httpTimeout(timeout)
 
 	config := map[string]interface{}{}
-	config["defaultComputeNetworkConfig"] = map[string]interface{}{}
-	config["defaultComputeNetworkConfig"].(map[string]interface{})["subnetId"] = subnetID
-	config["defaultComputeNetworkConfig"].(map[string]interface{})["vNetId"] = vpcID
-	config["defaultComputeNetworkConfig"].(map[string]interface{})["securityGroupId"] = securityGroupID
+	config["defaultComputeNetworkConfig"] = map[string]string{}
+	config["defaultComputeNetworkConfig"].(map[string]string)["vNetId"] = vpcID
+	config["defaultComputeNetworkConfig"].(map[string]string)["subnetId"] = subnetID
+	config["defaultComputeNetworkConfig"].(map[string]string)["securityGroupId"] = securityGroupID
 
-	archivesOnCluster, err := c.Get("internal", "/archive/object_store", httpTimeout)
+	archivesOnCluster, err := c.CloudObjectStore()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	for _, v := range archivesOnCluster.(map[string]interface{})["data"].([]interface{}) {
-		archiveDefinition := (v.(interface{}).(map[string]interface{})["definition"])
+	for _, v := range archivesOnCluster.Data {
 
-		if archiveDefinition.(map[string]interface{})["objectStoreType"] == "S3" && archiveDefinition.(map[string]interface{})["name"] == archiveName {
+		if v.Definition.ObjectStoreType == "S3" && v.Definition.Name == archiveName {
 
-			archivePresent := reflect.DeepEqual(archiveDefinition.(map[string]interface{})["defaultComputeNetworkConfig"], config["defaultComputeNetworkConfig"])
+			archivePresent := reflect.DeepEqual(v.Definition.DefaultComputeNetworkConfig, config["defaultComputeNetworkConfig"])
 			if archivePresent {
 				return fmt.Sprintf("No change required. The '%s' archive location is already configured for CloudOn.", archiveName), nil
-
 			}
 
-			archiveID := (v.(interface{}).(map[string]interface{})["id"])
-			apiRequest, err := c.Patch("internal", fmt.Sprintf("/archive/object_store/%s", archiveID), config, httpTimeout)
+			apiRequest, err := c.Patch("internal", fmt.Sprintf("/archive/object_store/%s", v.ID), config, httpTimeout)
 			if err != nil {
 				return nil, err
 			}
@@ -812,9 +817,43 @@ func (c *Credentials) AWSS3CloudOn(archiveName, vpcID, subnetID, securityGroupID
 			return apiRequest, err
 
 		}
-
 	}
+
 	return nil, fmt.Errorf("The Rubrik cluster does not have an archive location named '%s'", archiveName)
+
+	// good
+	// apiRequest, err := c.Post("internal", "/archive/object_store", config, httpTimeout)
+	// if err != nil {
+	// 	return "", err
+	// }
+
+	// archivesOnCluster, err := c.Get("internal", "/archive/object_store", httpTimeout)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// for _, v := range archivesOnCluster.(map[string]interface{})["data"].([]interface{}) {
+	// 	archiveDefinition := (v.(interface{}).(map[string]interface{})["definition"])
+
+	// 	if archiveDefinition.(map[string]interface{})["objectStoreType"] == "S3" && archiveDefinition.(map[string]interface{})["name"] == archiveName {
+
+	// 		archivePresent := reflect.DeepEqual(archiveDefinition.(map[string]interface{})["defaultComputeNetworkConfig"], config["defaultComputeNetworkConfig"])
+	// 		if archivePresent {
+	// 			return fmt.Sprintf("No change required. The '%s' archive location is already configured for CloudOn.", archiveName), nil
+
+	// 		}
+
+	// 		archiveID := (v.(interface{}).(map[string]interface{})["id"])
+	// 		apiRequest, err := c.Patch("internal", fmt.Sprintf("/archive/object_store/%s", archiveID), config, httpTimeout)
+	// 		if err != nil {
+	// 			return nil, err
+	// 		}
+
+	// 		return apiRequest, err
+
+	// 	}
+
+	// }
 
 }
 
@@ -900,10 +939,22 @@ func (c *Credentials) AzureCloudOut(container, azureAccessKey, storageAccountNam
 
 	apiRequest, err := c.Post("internal", "/archive/object_store", config, httpTimeout)
 	if err != nil {
+		return "", err
+	}
+
+	status, err := c.JobStatus(fmt.Sprintf("https://%s/api/internal/archive/location/job/connect/%s", c.NodeIP, apiRequest.(map[string]interface{})["jobInstanceId"].(string)))
+	if err != nil {
 		return nil, err
 	}
 
-	return apiRequest, nil
+	return status, nil
+
+	// apiRequest, err := c.Post("internal", "/archive/object_store", config, httpTimeout)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// return apiRequest, nil
 
 }
 
