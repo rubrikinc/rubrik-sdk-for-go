@@ -96,6 +96,16 @@ func (c *Credentials) ClusterNodeName() ([]string, error) {
 	return nodeName, nil
 }
 
+// ClusterBootstrapStatus checks whether the cluster has been bootstrapped.
+func (c *Credentials) ClusterBootstrapStatus() (bool, error) {
+	apiRequest, err := c.Get("internal", "/node_management/is_bootstrapped")
+	if err != nil {
+		return false, err
+	}
+
+	return apiRequest.(map[string]interface{})["value"].(bool), nil
+}
+
 // EndUserAuthorization assigns an End User account privileges for a VMware virtual machine. vmware is currently the only
 // supported "objectType"
 //
