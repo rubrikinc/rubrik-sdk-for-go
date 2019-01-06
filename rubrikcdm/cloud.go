@@ -606,7 +606,11 @@ func (c *Credentials) RemoveArchiveLocation(archiveName string, timeout ...int) 
 	// Pause archive activity on the archive location before deleting
 	_, pauseErr := c.Post("internal", fmt.Sprintf("/archive/location/%s/owner/pause", archiveID), httpTimeout)
 	if pauseErr != nil {
-		return nil, pauseErr
+		// If the archive location is already paused do not return an error message
+		if strings.Contains(pauseErr.Error(), "already paused") != true {
+			return nil, pauseErr
+		}
+
 	}
 
 	deleteAPIRequest, err := c.Delete("internal", fmt.Sprintf("/archive/location/%s", archiveID), httpTimeout)
