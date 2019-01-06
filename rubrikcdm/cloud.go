@@ -1009,7 +1009,6 @@ func (c *Credentials) AzureCloudOn(archiveName, container, storageAccountName, a
 
 	config := map[string]interface{}{}
 	config["name"] = archiveName
-	config["objectStoreType"] = "Azure"
 	config["isComputeEnabled"] = true
 
 	config["azureComputeSummary"] = map[string]string{}
@@ -1019,6 +1018,7 @@ func (c *Credentials) AzureCloudOn(archiveName, container, storageAccountName, a
 	config["azureComputeSummary"].(map[string]string)["region"] = region
 	config["azureComputeSummary"].(map[string]string)["generalPurposeStorageAccountName"] = storageAccountName
 	config["azureComputeSummary"].(map[string]string)["containerName"] = container
+	config["azureComputeSummary"].(map[string]string)["environment"] = "AZURE"
 
 	config["azureComputeSecret"] = map[string]string{}
 	config["azureComputeSecret"].(map[string]string)["clientSecret"] = applicationKey
@@ -1027,6 +1027,7 @@ func (c *Credentials) AzureCloudOn(archiveName, container, storageAccountName, a
 	config["defaultComputeNetworkConfig"].(map[string]string)["subnetId"] = subnetName
 	config["defaultComputeNetworkConfig"].(map[string]string)["vNetId"] = virtualNetworkID
 	config["defaultComputeNetworkConfig"].(map[string]string)["securityGroupId"] = securityGroupID
+	config["defaultComputeNetworkConfig"].(map[string]string)["resourceGroupId"] = strings.Split(virtualNetworkID, "/")[4]
 
 	// Create a simplified config that only includes the values returned by Rubrik that can be used for idempotence check
 	redactedConfig := map[string]interface{}{}
@@ -1065,6 +1066,8 @@ func (c *Credentials) AzureCloudOn(archiveName, container, storageAccountName, a
 			}
 
 			archiveID := (v.(interface{}).(map[string]interface{})["id"])
+			fmt.Println(archiveID)
+			fmt.Println(config)
 			apiRequest, err := c.Patch("internal", fmt.Sprintf("/archive/object_store/%s", archiveID), config, httpTimeout)
 			if err != nil {
 				return nil, err
