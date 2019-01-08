@@ -28,6 +28,21 @@ type ClusterVersion struct {
 	Version string `json:"version"`
 }
 
+// EndUserAuthorization corresponds to /internal/authorization/role/end_user
+type EndUserAuthorization struct {
+	HasMore bool `json:"hasMore"`
+	Data    []struct {
+		Principal  string `json:"principal"`
+		Privileges struct {
+			DestructiveRestore []string `json:"destructiveRestore"`
+			Restore            []string `json:"restore"`
+			ProvisionOnInfra   []string `json:"provisionOnInfra"`
+		} `json:"privileges"`
+		OrganizationID string `json:"organizationId"`
+	} `json:"data"`
+	Total int `json:"total"`
+}
+
 // ClusterVersion returns the CDM version of the Rubrik cluster.
 func (c *Credentials) ClusterVersion() (string, error) {
 	apiRequest, err := c.Get("v1", "/cluster/me/version")
@@ -113,7 +128,7 @@ func (c *Credentials) ClusterBootstrapStatus() (bool, error) {
 //	No change required. The End User '{endUser}' is already authorized to interact with the '{objectName}' VM.
 //
 //	The full API response for POST /internal/authorization/role/end_user
-func (c *Credentials) EndUserAuthorization(objectName, endUser, objectType string, timeout ...int) (interface{}, error) {
+func (c *Credentials) EndUserAuthorization(objectName, endUser, objectType string, timeout ...int) (*EndUserAuthorization, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -149,7 +164,7 @@ func (c *Credentials) EndUserAuthorization(objectName, endUser, objectType strin
 
 	for _, vm := range authorizedObjects.([]interface{}) {
 		if vm == vmID {
-			return fmt.Sprintf("No change required. The End User '%s' is already authorized to interact with the '%s' VM.", endUser, objectName), nil
+			return nil, fmt.Errorf("No change required. The End User '%s' is already authorized to interact with the '%s' VM", endUser, objectName)
 		}
 	}
 
@@ -163,7 +178,14 @@ func (c *Credentials) EndUserAuthorization(objectName, endUser, objectType strin
 		return nil, err
 	}
 
-	return apiRequest, nil
+	// Convert the API Response (map[string]interface{}) to a struct
+	var apiResponse EndUserAuthorization
+	mapErr := mapstructure.Decode(apiRequest, &apiResponse)
+	if mapErr != nil {
+		return nil, mapErr
+	}
+
+	return &apiResponse, nil
 
 }
 
