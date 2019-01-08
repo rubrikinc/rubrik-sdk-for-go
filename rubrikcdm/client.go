@@ -20,12 +20,13 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"os"
+	"reflect"
 	"sort"
 	"time"
 )
@@ -68,19 +69,19 @@ func Connect(nodeIP, username, password string) *Credentials {
 //  rubrik_cdm_username
 //
 //  rubrik_cdm_password
-func ConnectEnv() *Credentials {
+func ConnectEnv() (*Credentials, error) {
 
 	nodeIP, ok := os.LookupEnv("rubrik_cdm_node_ip")
 	if ok != true {
-		log.Fatalf("Error: The `rubrik_cdm_node_ip` environment variable is not present.")
+		return nil, errors.New("The `rubrik_cdm_node_ip` environment variable is not present")
 	}
 	username, ok := os.LookupEnv("rubrik_cdm_username")
 	if ok != true {
-		log.Fatalf("Error: The `rubrik_cdm_username` environment variable is not present.")
+		return nil, errors.New("The `rubrik_cdm_username` environment variable is not present")
 	}
 	password, ok := os.LookupEnv("rubrik_cdm_password")
 	if ok != true {
-		log.Fatalf("Error: The `rubrik_cdm_password` environment variable is not present.")
+		return nil, errors.New("The `rubrik_cdm_password` environment variable is not present")
 	}
 
 	client := &Credentials{
@@ -89,20 +90,20 @@ func ConnectEnv() *Credentials {
 		Password: password,
 	}
 
-	return client
+	return client, nil
 }
 
 // Consolidate the base API functions.
-func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config interface{}, timeout int) interface{} {
+func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config interface{}, timeout int) (interface{}, error) {
 
 	if apiVersionValidation(apiVersion) == false {
-		log.Fatalf("Error: Enter a valid API version.")
+		return nil, errors.New("Enter a valid API version")
 	}
 
 	if endpointValidation(apiEndpoint) == "errorStart" {
-		log.Fatalf("Error: The API Endpoint should begin with '/' (ex: /cluster/me).")
+		return nil, errors.New("The API Endpoint should begin with '/' (ex: /cluster/me)")
 	} else if endpointValidation(apiEndpoint) == "errorEnd" {
-		log.Fatal("Error: The API Endpoint should not end with '/' (ex. /cluster/me).")
+		return nil, errors.New("The API Endpoint should not end with '/' (ex. /cluster/me)")
 	}
 
 	tr := &http.Transport{
@@ -127,6 +128,10 @@ func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config
 		request, _ = http.NewRequest(callType, requestURL, bytes.NewBuffer(convertedConfig))
 	case "DELETE":
 		request, _ = http.NewRequest(callType, requestURL, nil)
+	case "JOB_STATUS":
+		// Overwrite the default requstURL with the job status url and convert to string
+		requestURL = config.(string)
+		request, _ = http.NewRequest("GET", requestURL, nil)
 	}
 	if len(c.Username) != 0 {
 		request.SetBasicAuth(c.Username, c.Password)
@@ -137,9 +142,9 @@ func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config
 
 	apiRequest, err := client.Do(request)
 	if err, ok := err.(net.Error); ok && err.Timeout() {
-		log.Fatalf("Error: Unable to establish a connection to the Rubrik cluster.")
+		return nil, errors.New("Unable to establish a connection to the Rubrik cluster")
 	} else if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	body, err := ioutil.ReadAll(apiRequest.Body)
@@ -147,7 +152,6 @@ func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config
 	apiResponse := []byte(body)
 
 	var convertedAPIResponse interface{}
-
 	if err := json.Unmarshal(apiResponse, &convertedAPIResponse); err != nil {
 
 		// DELETE request will return a 204 No Content status
@@ -155,28 +159,31 @@ func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config
 			convertedAPIResponse = map[string]interface{}{}
 			convertedAPIResponse.(map[string]interface{})["statusCode"] = apiRequest.StatusCode
 		} else if apiRequest.StatusCode != 200 {
-			log.Fatalf("Error: %s", apiRequest.Status)
+			return nil, fmt.Errorf("%s", apiRequest.Status)
 		}
 
 	}
 
+	//
+	if reflect.TypeOf(convertedAPIResponse).Kind() == reflect.Slice {
+		return convertedAPIResponse, nil
+	}
+
 	if _, ok := convertedAPIResponse.(map[string]interface{})["errorType"]; ok {
-		fmt.Println("1")
-		fmt.Println(convertedAPIResponse)
-		log.Fatalf("Error: %s", convertedAPIResponse.(map[string]interface{})["message"])
+		return nil, fmt.Errorf("%s", convertedAPIResponse.(map[string]interface{})["message"])
 	}
 
 	if _, ok := convertedAPIResponse.(map[string]interface{})["message"]; ok {
 		// Add exception for bootstrap
 		if _, ok := convertedAPIResponse.(map[string]interface{})["setupEncryptionAtRest"]; ok {
-			return convertedAPIResponse
+			return convertedAPIResponse, nil
 
 		}
 
-		log.Fatalf("Error: %s", convertedAPIResponse.(map[string]interface{})["message"])
+		return nil, fmt.Errorf("%s", convertedAPIResponse.(map[string]interface{})["message"])
 	}
 
-	return convertedAPIResponse
+	return convertedAPIResponse, nil
 
 }
 
@@ -200,7 +207,7 @@ func endpointValidation(apiEndpoint string) string {
 	} else if string(apiEndpoint[len(apiEndpoint)-1]) == "/" {
 		return "errorEnd"
 	}
-	return "succes"
+	return "success"
 }
 
 // httpTimeout returns a default timeout value of 15 or use the value provided by the end user
@@ -279,42 +286,97 @@ func shouldEscape(c byte, mode encoding) bool {
 // Get sends a GET request to the provided Rubrik API endpoint and returns the full API response. Supported "apiVersions" are v1, v2, and internal.
 // The optional timeout value corresponds to the number of seconds to wait to establish a connection to the Rubrik cluster before returning a
 // timeout error. If no value is provided, a default of 15 seconds will be used.
-func (c *Credentials) Get(apiVersion, apiEndpoint string, timeout ...int) interface{} {
+func (c *Credentials) Get(apiVersion, apiEndpoint string, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
-	return c.commonAPI("GET", apiVersion, apiEndpoint, nil, httpTimeout)
+	apiRequest, err := c.commonAPI("GET", apiVersion, apiEndpoint, nil, httpTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	return apiRequest, nil
+
+}
+
+// JobStatus performs a GET operation to monitor the status of a specific Rubrik job want waits for it's completion.
+func (c *Credentials) JobStatus(jobStatusURL string, timeout ...int) (interface{}, error) {
+
+	httpTimeout := httpTimeout(timeout)
+
+	// Dummy place holder values to pass validation
+	apiVersion := "v1"
+	apiEndpoint := "/placeholder"
+
+	for {
+		apiRequest, err := c.commonAPI("JOB_STATUS", apiVersion, apiEndpoint, jobStatusURL, httpTimeout)
+		if err != nil {
+			return nil, err
+		}
+
+		jobStatus := apiRequest.(map[string]interface{})["status"].(string)
+
+		switch jobStatus {
+		case "SUCCEEDED":
+			return apiRequest, nil
+		case "QUEUED":
+			time.Sleep(10 * time.Second)
+		case "RUNNING":
+			time.Sleep(10 * time.Second)
+		case "FINISHING":
+			time.Sleep(10 * time.Second)
+		default:
+			return apiRequest, errors.New("Job failed")
+		}
+	}
 
 }
 
 // Post sends a POST request to the provided Rubrik API endpoint and returns the full API response. Supported "apiVersions" are v1, v2, and internal.
 // The optional timeout value corresponds to the number of seconds to wait to establish a connection to the Rubrik cluster before returning a
 // timeout error. If no value is provided, a default of 15 seconds will be used.
-func (c *Credentials) Post(apiVersion, apiEndpoint string, config interface{}, timeout ...int) interface{} {
+func (c *Credentials) Post(apiVersion, apiEndpoint string, config interface{}, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
-	return c.commonAPI("POST", apiVersion, apiEndpoint, config, httpTimeout)
+	apiRequest, err := c.commonAPI("POST", apiVersion, apiEndpoint, config, httpTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	return apiRequest, nil
+
 }
 
 // Patch sends a PATCH request to the provided Rubrik API endpoint and returns the full API response. Supported "apiVersions" are v1, v2, and internal.
 // The optional timeout value corresponds to the number of seconds to wait to establish a connection to the Rubrik cluster before returning a
 // timeout error. If no value is provided, a default of 15 seconds will be used.
-func (c *Credentials) Patch(apiVersion, apiEndpoint string, config interface{}, timeout ...int) interface{} {
+func (c *Credentials) Patch(apiVersion, apiEndpoint string, config interface{}, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
-	return c.commonAPI("PATCH", apiVersion, apiEndpoint, config, httpTimeout)
+	apiRequest, err := c.commonAPI("PATCH", apiVersion, apiEndpoint, config, httpTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	return apiRequest, nil
+
 }
 
 // Delete sends a DELETE request to the provided Rubrik API endpoint and returns the full API response. Supported "apiVersions" are v1, v2, and internal.
 // The optional timeout value corresponds to the number of seconds to wait to establish a connection to the Rubrik cluster before returning a
 // timeout error. If no value is provided, a default of 15 seconds will be used.
-func (c *Credentials) Delete(apiVersion, apiEndpoint string, timeout ...int) interface{} {
+func (c *Credentials) Delete(apiVersion, apiEndpoint string, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
-	return c.commonAPI("DELETE", apiVersion, apiEndpoint, nil, httpTimeout)
+	apiRequest, err := c.commonAPI("DELETE", apiVersion, apiEndpoint, nil, httpTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	return apiRequest, nil
 }
 
 // stringEq converts b to []string, sorts the two []string, and checks for equality

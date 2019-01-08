@@ -1,16 +1,52 @@
+// Copyright 2018 Rubrik, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License prop
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 package rubrikcdm
 
 import (
+	"errors"
 	"fmt"
-	"log"
+
+	"github.com/mitchellh/mapstructure"
 )
+
+// EndManagedVolumeSnapshot corresponds to POST /internal/managed_volume/{id}/end_snapshot
+type EndManagedVolumeSnapshot struct {
+	ID                     string   `json:"id"`
+	Date                   string   `json:"date"`
+	ExpirationDate         string   `json:"expirationDate"`
+	SourceObjectType       string   `json:"sourceObjectType"`
+	IsOnDemandSnapshot     bool     `json:"isOnDemandSnapshot"`
+	CloudState             int      `json:"cloudState"`
+	ConsistencyLevel       string   `json:"consistencyLevel"`
+	IndexState             int      `json:"indexState"`
+	ReplicationLocationIds []string `json:"replicationLocationIds"`
+	ArchivalLocationIds    []string `json:"archivalLocationIds"`
+	SLAID                  string   `json:"slaId"`
+	SLAName                string   `json:"slaName"`
+	Links                  struct {
+		Self struct {
+			Href string `json:"href"`
+			Rel  string `json:"rel"`
+		} `json:"self"`
+	} `json:"links"`
+}
 
 // ObjectID will search the Rubrik cluster for the provided "objectName" and return its ID/
 //
 // Valid "awsRegion" choices are:
 //
 //	vmware, sla, vmwareHost, physicalHost, filesetTemplate, managedVolume
-func (c *Credentials) ObjectID(objectName, objectType string, hostOS ...string) string {
+func (c *Credentials) ObjectID(objectName, objectType string, hostOS ...string) (string, error) {
 
 	validObjectType := map[string]bool{
 		"vmware":          true,
@@ -22,7 +58,7 @@ func (c *Credentials) ObjectID(objectName, objectType string, hostOS ...string) 
 	}
 
 	if validObjectType[objectType] == false {
-		log.Fatalf("Error: The 'objectType' must be 'vmware', 'sla', 'vmwareHost', 'physicalHost', 'filesetTemplate', or 'managedVolume'.")
+		return "", fmt.Errorf("The 'objectType' must be 'vmware', 'sla', 'vmwareHost', 'physicalHost', 'filesetTemplate', or 'managedVolume'")
 	}
 
 	var objectSummaryAPIVersion string
@@ -49,14 +85,12 @@ func (c *Credentials) ObjectID(objectName, objectType string, hostOS ...string) 
 			case "Linux":
 			case "Windows":
 			default:
-				log.Fatalf("Error: The hostOS must be either 'Linux' or 'Windows'.")
+				return "", errors.New("The hostOS must be either 'Linux' or 'Windows'")
 
 			}
 		} else if len(hostOS) == 0 {
-			log.Fatalf("Error: You must provide the Fileset Tempalte OS type. ")
-
+			return "", errors.New("You must provide the Fileset Tempalte OS type")
 		}
-
 		objectSummaryAPIVersion = "v1"
 		objectSummaryAPIEndpoint = fmt.Sprintf("/fileset_template?primary_cluster_id=local&operating_system_type=%s&name=%s", hostOperatingSystem, objectName)
 	case "managedVolume":
@@ -64,10 +98,13 @@ func (c *Credentials) ObjectID(objectName, objectType string, hostOS ...string) 
 		objectSummaryAPIEndpoint = fmt.Sprintf("/managed_volume?is_relic=false&primary_cluster_id=local&name=%s", objectName)
 	}
 
-	apiRequest := c.Get(objectSummaryAPIVersion, objectSummaryAPIEndpoint).(map[string]interface{})
-	if apiRequest["total"] == 0 {
-		log.Fatalf(fmt.Sprintf("Error: The %s object '%s' was not found on the Rubrik cluster.", objectType, objectName))
-	} else if apiRequest["total"].(float64) > 0 {
+	apiRequest, err := c.Get(objectSummaryAPIVersion, objectSummaryAPIEndpoint)
+	if err != nil {
+		return "", err
+	}
+	if apiRequest.(map[string]interface{})["total"] == 0 {
+		return "", fmt.Errorf("The %s object '%s' was not found on the Rubrik cluster", objectType, objectName)
+	} else if apiRequest.(map[string]interface{})["total"].(float64) > 0 {
 		objectIDs := make([]string, 0)
 		// # Define the "object name" to search for
 		var nameValue string
@@ -77,23 +114,22 @@ func (c *Credentials) ObjectID(objectName, objectType string, hostOS ...string) 
 			nameValue = "name"
 		}
 
-		for _, v := range apiRequest["data"].([]interface{}) {
+		for _, v := range apiRequest.(map[string]interface{})["data"].([]interface{}) {
 			if v.(interface{}).(map[string]interface{})[nameValue].(string) == objectName {
 				objectIDs = append(objectIDs, v.(interface{}).(map[string]interface{})["id"].(string))
 			}
 		}
 
 		if len(objectIDs) > 1 {
-			log.Fatalf(fmt.Sprintf("Error: Multiple %s objects named '%s' were found on the Rubrik cluster. Unable to return a specific object id.", objectType, objectName))
+			return "", fmt.Errorf("Multiple %s objects named '%s' were found on the Rubrik cluster. Unable to return a specific object id", objectType, objectName)
 		} else if len(objectIDs) == 0 {
-			log.Fatalf(fmt.Sprintf("Error: The %s object '%s' was not found on the Rubrik cluster.", objectType, objectName))
+			return "", fmt.Errorf("The %s object '%s' was not found on the Rubrik cluster", objectType, objectName)
 		} else {
-			return objectIDs[0]
+			return objectIDs[0], nil
 		}
 	}
 
-	log.Fatalf(fmt.Sprintf("Error: The %s object '%s' was not found on the Rubrik cluster.", objectType, objectName))
-	return ""
+	return "", fmt.Errorf("The %s object '%s' was not found on the Rubrik cluster", objectType, objectName)
 
 }
 
@@ -104,7 +140,7 @@ func (c *Credentials) ObjectID(objectName, objectType string, hostOS ...string) 
 //	No change required. The vSphere VM '{objectName}' is already assigned to the '{slaName}' SLA Domain.
 //
 //	The full API response for POST /internal/sla_domain/{slaID}/assign.
-func (c *Credentials) AssignSLA(objectName, objectType, slaName string, timeout ...int) interface{} {
+func (c *Credentials) AssignSLA(objectName, objectType, slaName string, timeout ...int) (*StatusCode, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -113,25 +149,35 @@ func (c *Credentials) AssignSLA(objectName, objectType, slaName string, timeout 
 	}
 
 	if validObjectType[objectType] == false {
-		log.Fatalf("Error: The 'objectType' must be 'vmware'.")
+		return nil, fmt.Errorf("The 'objectType' must be 'vmware'")
 	}
 
 	var slaID string
+	var err error
 	switch slaName {
 	case "do not protect":
 		slaID = "UNPROTECTED"
 	case "clear":
 		slaID = "INHERIT"
 	default:
-		slaID = c.ObjectID(slaName, "sla")
+		slaID, err = c.ObjectID(slaName, "sla")
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	config := map[string]interface{}{}
 	switch objectType {
 	case "vmware":
-		vmID := c.ObjectID(objectName, "vmware")
+		vmID, err := c.ObjectID(objectName, "vmware")
+		if err != nil {
+			return nil, err
+		}
 
-		vmSummary := c.Get("v1", fmt.Sprintf("/vmware/vm/%s", vmID), httpTimeout)
+		vmSummary, err := c.Get("v1", fmt.Sprintf("/vmware/vm/%s", vmID), httpTimeout)
+		if err != nil {
+			return nil, err
+		}
 
 		var currentSLAID string
 		switch slaID {
@@ -142,13 +188,24 @@ func (c *Credentials) AssignSLA(objectName, objectType, slaName string, timeout 
 		}
 
 		if slaID == currentSLAID {
-			return fmt.Sprintf("No change required. The vSphere VM '%s' is already assigned to the '%s' SLA Domain.", objectName, slaName)
+			return nil, fmt.Errorf("No change required. The vSphere VM '%s' is already assigned to the '%s' SLA Domain", objectName, slaName)
 		}
 
 		config["managedIds"] = []string{vmID}
 	}
+	apiRequest, err := c.Post("internal", fmt.Sprintf("/sla_domain/%s/assign", slaID), config, httpTimeout)
+	if err != nil {
+		return nil, err
+	}
 
-	return c.Post("internal", fmt.Sprintf("/sla_domain/%s/assign", slaID), config, httpTimeout)
+	// Convert the API Response (map[string]interface{}) to a struct
+	var apiResponse StatusCode
+	mapErr := mapstructure.Decode(apiRequest, &apiResponse)
+	if mapErr != nil {
+		return nil, mapErr
+	}
+
+	return &apiResponse, nil
 }
 
 // BeginManagedVolumeSnapshot opens a managed volume for writes. All writes to the managed volume until the snapshot is
@@ -158,23 +215,41 @@ func (c *Credentials) AssignSLA(objectName, objectType, slaName string, timeout 
 //	No change required. The Managed Volume '{name}' is already in a writeable state.
 //
 //	The full API response for POST /internal/managed_volume/{managedVolumeID}/begin_snapshot
-func (c *Credentials) BeginManagedVolumeSnapshot(name string, timeout ...int) interface{} {
+func (c *Credentials) BeginManagedVolumeSnapshot(name string, timeout ...int) (*StatusCode, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
-	managedVolumeID := c.ObjectID(name, "managedVolume")
+	managedVolumeID, err := c.ObjectID(name, "managedVolume")
+	if err != nil {
+		return nil, err
+	}
 
-	managedVolumeSummary := c.Get("internal", fmt.Sprintf("/managed_volume/%s", managedVolumeID), httpTimeout)
+	fmt.Println(managedVolumeID)
+
+	managedVolumeSummary, err := c.Get("internal", fmt.Sprintf("/managed_volume/%s", managedVolumeID), httpTimeout)
+	if err != nil {
+		return nil, err
+	}
 
 	if managedVolumeSummary.(map[string]interface{})["isWritable"].(bool) {
-
-		return fmt.Sprintf("No change required. The Managed Volume '%s' is already in a writeable state.", name)
+		return nil, fmt.Errorf("No change required. The Managed Volume '%s' is already in a writeable state", name)
 	}
 
 	config := map[string]string{}
 
-	return c.Post("internal", fmt.Sprintf("/managed_volume/%s/begin_snapshot", managedVolumeID), config, httpTimeout)
+	apiRequest, err := c.Post("internal", fmt.Sprintf("/managed_volume/%s/begin_snapshot", managedVolumeID), config, httpTimeout)
+	if err != nil {
+		return nil, err
+	}
 
+	// Convert the API Response (map[string]interface{}) to a struct
+	var apiResponse StatusCode
+	mapErr := mapstructure.Decode(apiRequest, &apiResponse)
+	if mapErr != nil {
+		return nil, mapErr
+	}
+
+	return &apiResponse, nil
 }
 
 // EndManagedVolumeSnapshot closes a managed volume for writes. A snapshot will be created containing all writes since the last begin snapshot call.
@@ -183,37 +258,55 @@ func (c *Credentials) BeginManagedVolumeSnapshot(name string, timeout ...int) in
 //	No change required. The Managed Volume '{name}' is already in a read-only state.
 //
 //	The full API response for POST /internal/managed_volume/{managedVolumeID}/end_snapshot
-func (c *Credentials) EndManagedVolumeSnapshot(name, slaName string, timeout ...int) interface{} {
+func (c *Credentials) EndManagedVolumeSnapshot(name, slaName string, timeout ...int) (*EndManagedVolumeSnapshot, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
-	managedVolumeID := c.ObjectID(name, "managedVolume")
+	managedVolumeID, err := c.ObjectID(name, "managedVolume")
+	if err != nil {
+		return nil, err
+	}
 
-	managedVolumeSummary := c.Get("internal", fmt.Sprintf("/managed_volume/%s", managedVolumeID), httpTimeout)
+	managedVolumeSummary, err := c.Get("internal", fmt.Sprintf("/managed_volume/%s", managedVolumeID), httpTimeout)
+	if err != nil {
+		return nil, err
+	}
 
 	if managedVolumeSummary.(map[string]interface{})["isWritable"].(bool) == false {
-
-		return fmt.Sprintf("No change required. The Managed Volume '%s' is already in a read-only state.", name)
+		return nil, fmt.Errorf("No change required. The Managed Volume '%s' is already in a read-only state.", name)
 	}
 
 	var slaID string
+	config := map[string]interface{}{}
 	switch slaName {
 	case "current":
-		slaID = managedVolumeSummary.(map[string]interface{})["configuredSlaDomainId"].(string)
 	default:
-		slaID = c.ObjectID(slaName, "sla")
+		slaID, err = c.ObjectID(slaName, "sla")
+		if err != nil {
+			return nil, err
+		}
+		config["retentionConfig"] = map[string]interface{}{}
+		config["retentionConfig"].(map[string]interface{})["slaId"] = slaID
 	}
 
-	config := map[string]interface{}{}
-	config["retentionConfig"] = map[string]interface{}{}
-	config["retentionConfig"].(map[string]interface{})["slaId"] = slaID
+	apiRequest, err := c.Post("internal", fmt.Sprintf("/managed_volume/%s/end_snapshot", managedVolumeID), config, httpTimeout)
+	if err != nil {
+		return nil, err
+	}
 
-	return c.Post("internal", fmt.Sprintf("/managed_volume/%s/end_snapshot", managedVolumeID), config, httpTimeout)
+	// Convert the API Response (map[string]interface{}) to a struct
+	var endSnapshot EndManagedVolumeSnapshot
+	mapErr := mapstructure.Decode(apiRequest, &endSnapshot)
+	if mapErr != nil {
+		return nil, mapErr
+	}
+
+	return &endSnapshot, nil
 
 }
 
 // GetSLAObjects returns the name and ID of a specific object type.
-func (c *Credentials) GetSLAObjects(slaName, objectType string, timeout ...int) interface{} {
+func (c *Credentials) GetSLAObjects(slaName, objectType string, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -222,29 +315,35 @@ func (c *Credentials) GetSLAObjects(slaName, objectType string, timeout ...int) 
 	}
 
 	if validObjectType[objectType] == false {
-		log.Fatalf("Error: The 'objectType' must be 'vmware'")
+		return nil, fmt.Errorf("The 'objectType' must be 'vmware'")
 	}
 
 	switch objectType {
 	case "vmware":
-		slaID := c.ObjectID(slaName, "sla")
+		slaID, err := c.ObjectID(slaName, "sla")
+		if err != nil {
+			return nil, err
+		}
 
-		allVMinSLA := c.Get("v1", fmt.Sprintf("/vmware/vm?effective_sla_domain_id=%s&is_relic=false", slaID), httpTimeout).(map[string]interface{})
+		allVMinSLA, err := c.Get("v1", fmt.Sprintf("/vmware/vm?effective_sla_domain_id=%s&is_relic=false", slaID), httpTimeout)
+		if err != nil {
+			return nil, err
+		}
 
-		if allVMinSLA["total"].(float64) == 0 {
-			return fmt.Sprintf("The SLA '%s' is currently not protecting any %s objects.", slaName, objectType)
+		if allVMinSLA.(map[string]interface{})["total"].(float64) == 0 {
+			return fmt.Sprintf("The SLA '%s' is currently not protecting any %s objects.", slaName, objectType), nil
 		}
 
 		vmNameID := map[interface{}]interface{}{}
-		for _, v := range allVMinSLA["data"].([]interface{}) {
+		for _, v := range allVMinSLA.(map[string]interface{})["data"].([]interface{}) {
 			vmNameID[v.(map[string]interface{})["name"]] = v.(map[string]interface{})["id"]
 		}
 
-		return vmNameID
+		return vmNameID, nil
 
 	}
 
-	return ""
+	return "", nil
 }
 
 // PauseSnapshot suspends all snapshot activity for the provided object. The only "objectType" current supported is vmware.
@@ -253,7 +352,7 @@ func (c *Credentials) GetSLAObjects(slaName, objectType string, timeout ...int) 
 //	No change required. The '{objectName}' '{objectType}' is already paused.
 //
 //	The full API response for POST /internal/vmware/vm/{vmID}
-func (c *Credentials) PauseSnapshot(objectName, objectType string, timeout ...int) interface{} {
+func (c *Credentials) PauseSnapshot(objectName, objectType string, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -267,27 +366,38 @@ func (c *Credentials) PauseSnapshot(objectName, objectType string, timeout ...in
 	}
 
 	if validObjectType[objectType] == false {
-		log.Fatalf("Error: The 'objectType' must be 'vmware'")
+		return nil, fmt.Errorf("The 'objectType' must be 'vmware'")
 	}
 
 	switch objectType {
 	case "vmware":
-		vmID := c.ObjectID(objectName, "vmware")
+		vmID, err := c.ObjectID(objectName, "vmware")
+		if err != nil {
+			return nil, err
+		}
 
-		vmSummary := c.Get("v1", fmt.Sprintf("/vmware/vm/%s", vmID), httpTimeout).(map[string]interface{})
+		vmSummary, err := c.Get("v1", fmt.Sprintf("/vmware/vm/%s", vmID), httpTimeout)
+		if err != nil {
+			return nil, err
+		}
 
-		if vmSummary["blackoutWindowStatus"].(map[string]interface{})["isSnappableBlackoutActive"].(bool) {
-			return fmt.Sprintf("No change required. The '%s' '%s' is already paused.", objectName, objectType)
+		if vmSummary.(map[string]interface{})["blackoutWindowStatus"].(map[string]interface{})["isSnappableBlackoutActive"].(bool) {
+			return fmt.Sprintf("No change required. The '%s' '%s' is already paused.", objectName, objectType), nil
 		}
 
 		config := map[string]bool{}
 		config["isVmPaused"] = true
 
-		return c.Patch("v1", fmt.Sprintf("/vmware/vm/%s", vmID), config, httpTimeout)
+		apiRequest, err := c.Patch("v1", fmt.Sprintf("/vmware/vm/%s", vmID), config, httpTimeout)
+		if err != nil {
+			return nil, err
+		}
+
+		return apiRequest, nil
 
 	}
 
-	return ""
+	return "", nil
 }
 
 // ResumeSnapshot resumes all snapshot activity for the provided object. The only "objectType" currently supported is vmware.
@@ -296,7 +406,7 @@ func (c *Credentials) PauseSnapshot(objectName, objectType string, timeout ...in
 //	No change required. The '{objectName}' '{objectType}' is currently not paused.
 //
 //	The full API response for POST /internal/vmware/vm/{vmID}
-func (c *Credentials) ResumeSnapshot(objectName, objectType string, timeout ...int) interface{} {
+func (c *Credentials) ResumeSnapshot(objectName, objectType string, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -310,27 +420,38 @@ func (c *Credentials) ResumeSnapshot(objectName, objectType string, timeout ...i
 	}
 
 	if validObjectType[objectType] == false {
-		log.Fatalf("Error: The 'objectType' must be 'vmware'")
+		return nil, fmt.Errorf("The 'objectType' must be 'vmware'")
 	}
 
 	switch objectType {
 	case "vmware":
-		vmID := c.ObjectID(objectName, "vmware")
+		vmID, err := c.ObjectID(objectName, "vmware")
+		if err != nil {
+			return nil, err
+		}
 
-		vmSummary := c.Get("v1", fmt.Sprintf("/vmware/vm/%s", vmID), httpTimeout).(map[string]interface{})
+		vmSummary, err := c.Get("v1", fmt.Sprintf("/vmware/vm/%s", vmID), httpTimeout)
+		if err != nil {
+			return nil, err
+		}
 
-		if vmSummary["blackoutWindowStatus"].(map[string]interface{})["isSnappableBlackoutActive"].(bool) == false {
-			return fmt.Sprintf("No change required. The '%s' '%s' is currently not paused.", objectName, objectType)
+		if vmSummary.(map[string]interface{})["blackoutWindowStatus"].(map[string]interface{})["isSnappableBlackoutActive"].(bool) == false {
+			return fmt.Sprintf("No change required. The '%s' '%s' is currently not paused.", objectName, objectType), nil
 		}
 
 		config := map[string]bool{}
 		config["isVmPaused"] = false
 
-		return c.Patch("v1", fmt.Sprintf("/vmware/vm/%s", vmID), config, httpTimeout)
+		apiRequest, err := c.Patch("v1", fmt.Sprintf("/vmware/vm/%s", vmID), config, httpTimeout)
+		if err != nil {
+			return nil, err
+		}
+
+		return apiRequest, nil
 
 	}
 
-	return ""
+	return "", nil
 }
 
 // OnDemandSnapshotVM initiates an on-demand snapshot for the "objectName". The only "objectType" currently supported is vmware. To use the currently
@@ -338,7 +459,7 @@ func (c *Credentials) ResumeSnapshot(objectName, objectType string, timeout ...i
 //
 // The function will return:
 //	The job status URL for the on-demand Snapshot
-func (c *Credentials) OnDemandSnapshotVM(objectName, objectType, slaName string, timeout ...int) string {
+func (c *Credentials) OnDemandSnapshotVM(objectName, objectType, slaName string, timeout ...int) (string, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -352,29 +473,43 @@ func (c *Credentials) OnDemandSnapshotVM(objectName, objectType, slaName string,
 	}
 
 	if validObjectType[objectType] == false {
-		log.Fatalf("Error: The 'objectType' must be 'vmware'")
+		return "", fmt.Errorf("The 'objectType' must be 'vmware'")
 	}
 
 	switch objectType {
 	case "vmware":
-		vmID := c.ObjectID(objectName, "vmware")
+		vmID, err := c.ObjectID(objectName, "vmware")
+		if err != nil {
+			return "", err
+		}
 
-		var slaID string
+		var slaID interface{}
 		switch slaName {
 		case "current":
-			slaID = c.Get("v1", fmt.Sprintf("/vmware/vm/%s", vmID)).(map[string]interface{})["effectiveSlaDomainId"].(string)
+			slaID, err = c.Get("v1", fmt.Sprintf("/vmware/vm/%s", vmID))
+			if err != nil {
+				return "", err
+			}
 		default:
-			slaID = c.ObjectID(slaName, "sla")
+			slaID, err = c.ObjectID(slaName, "sla")
+			if err != nil {
+				return "", err
+			}
 		}
 
 		config := map[string]string{}
-		config["slaId"] = slaID
+		config["slaId"] = slaID.(map[string]interface{})["effectiveSlaDomainId"].(string)
 
-		return c.Post("v1", fmt.Sprintf("/vmware/vm/%s/snapshot", vmID), config, httpTimeout).(map[string]interface{})["links"].([]interface{})[0].(map[string]interface{})["href"].(string)
+		apiRequest, err := c.Post("v1", fmt.Sprintf("/vmware/vm/%s/snapshot", vmID), config, httpTimeout)
+		if err != nil {
+			return "", err
+		}
+
+		return apiRequest.(map[string]interface{})["links"].([]interface{})[0].(map[string]interface{})["href"].(string), nil
 
 	}
 
-	return ""
+	return "", nil
 }
 
 // OnDemandSnapshotPhysical initiates an on-demand snapshot for a physical host ("hostname"). To use the currently  assigned SLA Domain for the
@@ -386,7 +521,7 @@ func (c *Credentials) OnDemandSnapshotVM(objectName, objectType, slaName string,
 //
 // The function will return:
 //	The job status URL for the on-demand Snapshot
-func (c *Credentials) OnDemandSnapshotPhysical(hostName, slaName, fileset, hostOS string, timeout ...int) string {
+func (c *Credentials) OnDemandSnapshotPhysical(hostName, slaName, fileset, hostOS string, timeout ...int) (string, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -401,32 +536,49 @@ func (c *Credentials) OnDemandSnapshotPhysical(hostName, slaName, fileset, hostO
 	}
 
 	if validHostOs[hostOS] == false {
-		log.Fatalf("Error: The 'hostOS' must be 'Linux' or 'Windows.")
+		return "", fmt.Errorf("The 'hostOS' must be 'Linux' or 'Windows")
 	}
 
-	hostID := c.ObjectID(hostName, "physicalHost")
-
-	filesetTemplateID := c.ObjectID(fileset, "filesetTemplate", hostOS)
-
-	filesetSummary := c.Get("v1", fmt.Sprintf("/fileset?primary_cluster_id=local&host_id=%s&is_relic=false&template_id=%s", hostID, filesetTemplateID)).(map[string]interface{})
-
-	if filesetSummary["total"] == 0 {
-		log.Fatalf(fmt.Sprintf("Error: The Physical Host '%s' is not assigned to the '%s' Fileset.", hostName, fileset))
+	hostID, err := c.ObjectID(hostName, "physicalHost")
+	if err != nil {
+		return "", err
 	}
 
-	filesetID := filesetSummary["data"].([]interface{})[0].(map[string]interface{})["id"].(string)
+	filesetTemplateID, err := c.ObjectID(fileset, "filesetTemplate", hostOS)
+	if err != nil {
+		return "", err
+	}
+
+	filesetSummary, err := c.Get("v1", fmt.Sprintf("/fileset?primary_cluster_id=local&host_id=%s&is_relic=false&template_id=%s", hostID, filesetTemplateID))
+	if err != nil {
+		return "", err
+	}
+
+	if filesetSummary.(map[string]interface{})["total"] == 0 {
+		return "", fmt.Errorf("The Physical Host '%s' is not assigned to the '%s' Fileset", hostName, fileset)
+	}
+
+	filesetID := filesetSummary.(map[string]interface{})["data"].([]interface{})[0].(map[string]interface{})["id"].(string)
 
 	var slaID string
 	switch slaName {
 	case "current":
-		slaID = filesetSummary["data"].([]interface{})[0].(map[string]interface{})["effectiveSlaDomainId"].(string)
+		slaID = filesetSummary.(map[string]interface{})["data"].([]interface{})[0].(map[string]interface{})["effectiveSlaDomainId"].(string)
 	default:
-		slaID = c.ObjectID(slaName, "sla")
+		slaID, err = c.ObjectID(slaName, "sla")
+		if err != nil {
+			return "", err
+		}
 
 	}
 
 	config := map[string]string{}
 	config["slaId"] = slaID
 
-	return c.Post("v1", fmt.Sprintf("/fileset/%s/snapshot", filesetID), config, httpTimeout).(map[string]interface{})["links"].([]interface{})[0].(map[string]interface{})["href"].(string)
+	apiRequeset, err := c.Post("v1", fmt.Sprintf("/fileset/%s/snapshot", filesetID), config, httpTimeout)
+	if err != nil {
+		return "", err
+	}
+
+	return apiRequeset.(map[string]interface{})["links"].([]interface{})[0].(map[string]interface{})["href"].(string), nil
 }
