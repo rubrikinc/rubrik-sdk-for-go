@@ -26,6 +26,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"reflect"
 	"sort"
 	"time"
 )
@@ -151,7 +152,6 @@ func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config
 	apiResponse := []byte(body)
 
 	var convertedAPIResponse interface{}
-
 	if err := json.Unmarshal(apiResponse, &convertedAPIResponse); err != nil {
 
 		// DELETE request will return a 204 No Content status
@@ -162,6 +162,11 @@ func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config
 			return nil, fmt.Errorf("%s", apiRequest.Status)
 		}
 
+	}
+
+	//
+	if reflect.TypeOf(convertedAPIResponse).Kind() == reflect.Slice {
+		return convertedAPIResponse, nil
 	}
 
 	if _, ok := convertedAPIResponse.(map[string]interface{})["errorType"]; ok {
@@ -321,8 +326,6 @@ func (c *Credentials) JobStatus(jobStatusURL string, timeout ...int) (interface{
 		case "FINISHING":
 			time.Sleep(10 * time.Second)
 		default:
-			fmt.Println(jobStatus)
-			fmt.Println(apiRequest)
 			return apiRequest, errors.New("Job failed")
 		}
 	}
