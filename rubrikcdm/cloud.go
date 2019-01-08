@@ -397,7 +397,7 @@ func (c *Credentials) AddAWSNativeAccount(awsAccountName, awsAccessKey, awsSecre
 
 }
 
-// RemoveAWSAccount deletes the specific AWS account from the Rubrik clsuter
+// RemoveAWSAccount deletes the specific AWS account from the Rubrik clsuter and waits for the job to complete before returning the JobStatus API response.
 func (c *Credentials) RemoveAWSAccount(awsAccountName string, deleteExsitingSnapshots bool, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
@@ -427,7 +427,24 @@ func (c *Credentials) RemoveAWSAccount(awsAccountName string, deleteExsitingSnap
 	return status, nil
 }
 
-// UpdateAWSNativeAccount
+// UpdateAWSNativeAccount updates the configuration of a AWS Native account. The following values, from PATCH /internal/aws/account/{id} are options for the config:
+//  {
+//   "name": "string",
+//   "accessKey": "string",
+//   "secretKey": "string",
+//   "regions": [
+//     "string"
+//   ],
+//   "regionalBoltNetworkConfigs": [
+//     {
+//       "region": "string",
+//       "vNetId": "string",
+//       "subnetId": "string",
+//       "securityGroupId": "string"
+//     }
+//   ],
+//   "disasterRecoveryArchivalLocationId": "string"
+// }
 func (c *Credentials) UpdateAWSNativeAccount(archiveName string, config map[string]interface{}, timeout ...int) (*UpdateAWSNative, error) {
 
 	httpTimeout := httpTimeout(timeout)
@@ -566,7 +583,7 @@ func (c *Credentials) AWSS3CloudOutRSA(awsBucketName, storageClass, archiveName,
 
 }
 
-// CloudObjectStore retrieves all archive locations configured on the Rubik cluster via /internal/archive/object_store
+// CloudObjectStore retrieves all archive locations configured on the Rubik cluster.
 func (c *Credentials) CloudObjectStore(timeout ...int) (*CloudObjectStore, error) {
 
 	httpTimeout := httpTimeout(timeout)
@@ -587,7 +604,7 @@ func (c *Credentials) CloudObjectStore(timeout ...int) (*CloudObjectStore, error
 
 }
 
-// AWSAccountSummary
+// AWSAccountSummary retrives all information from an AWS Native Account.
 func (c *Credentials) AWSAccountSummary(awsAccountName string, timeout ...int) (*CurrentAWSAccountID, error) {
 
 	httpTimeout := httpTimeout(timeout)
@@ -630,7 +647,7 @@ func (c *Credentials) AWSAccountSummary(awsAccountName string, timeout ...int) (
 
 }
 
-// RemoveArchiveLocation delete the archival location from the SLA Domains that reference it and expire all snapshots at the archival location
+// RemoveArchiveLocation deletes the archival location from the SLA Domains that reference it and expire all snapshots at the archival location
 func (c *Credentials) RemoveArchiveLocation(archiveName string, timeout ...int) (*JobStatus, error) {
 
 	httpTimeout := httpTimeout(timeout)
@@ -686,7 +703,55 @@ func (c *Credentials) RemoveArchiveLocation(archiveName string, timeout ...int) 
 	return &deleteArchive, nil
 }
 
-// UpdateCloudArchiveLocation delete the archival location from the SLA Domains that reference it and expire all snapshots at the archival location
+// UpdateCloudArchiveLocation updates the configuration of a the Cloud Archival Location. The following values, from PATCH /internal/object_store/{id} are options for the config:
+//  {
+//     "name": "string",
+//     "accessKey": "string",
+//     "secretKey": "string",
+//     "endpoint": "string",
+//     "numBuckets": 0,
+//     "isComputeEnabled": true,
+//     "isConsolidationEnabled": true,
+//     "defaultComputeNetworkConfig": {
+//       "subnetId": "string",
+//       "vNetId": "string",
+//       "securityGroupId": "string",
+//       "resourceGroupId": "string"
+//     },
+//     "storageClass": "string",
+//     "glacierConfig": {
+//       "retrievalTier": "BulkRetrieval",
+//       "vaultLockPolicy": {
+//         "fileLockPeriodInDays": 0
+//       }
+//     },
+//     "azureComputeSummary": {
+//       "tenantId": "string",
+//       "subscriptionId": "string",
+//       "clientId": "string",
+//       "region": "string",
+//       "generalPurposeStorageAccountName": "string",
+//       "containerName": "string",
+//       "environment": "AZURE"
+//     },
+//     "azureComputeSecret": {
+//     "  clientSecret": "string"
+//     },
+//     "archivalProxyConfig": {
+//       "protocol": "HTTP",
+//       "proxyServer": "string",
+//       "portNumber": 0,
+//       "userName": "string",
+//       "password": "string"
+//     },
+//     "computeProxyConfig": {
+//       "protocol": "HTTP",
+//       "proxyServer": "string",
+//       "portNumber": 0,
+//       "userName": "string",
+//       "password": "string"
+//     }
+//   }
 func (c *Credentials) UpdateCloudArchiveLocation(archiveName string, config map[string]interface{}, timeout ...int) (*UpdateArchiveLocations, error) {
 
 	httpTimeout := httpTimeout(timeout)
