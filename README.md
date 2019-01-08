@@ -9,9 +9,9 @@
 
 ```go get github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm```
 
-## Quickstart
+## Quick Start
 
-[Quickstart Guide](https://github.com/rubrikinc/rubrik-sdk-for-go/blob/master/docs/quickstart.md)
+[Quick Start Guide](https://github.com/rubrikinc/rubrik-sdk-for-go/blob/master/docs/quick-start.md)
 
 ## Documentation
 
