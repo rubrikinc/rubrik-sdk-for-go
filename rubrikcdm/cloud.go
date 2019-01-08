@@ -825,40 +825,6 @@ func (c *Credentials) AWSS3CloudOn(archiveName, vpcID, subnetID, securityGroupID
 
 	return nil, fmt.Errorf("The Rubrik cluster does not have an archive location named '%s'", archiveName)
 
-	// good
-	// apiRequest, err := c.Post("internal", "/archive/object_store", config, httpTimeout)
-	// if err != nil {
-	// 	return "", err
-	// }
-
-	// archivesOnCluster, err := c.Get("internal", "/archive/object_store", httpTimeout)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// for _, v := range archivesOnCluster.(map[string]interface{})["data"].([]interface{}) {
-	// 	archiveDefinition := (v.(interface{}).(map[string]interface{})["definition"])
-
-	// 	if archiveDefinition.(map[string]interface{})["objectStoreType"] == "S3" && archiveDefinition.(map[string]interface{})["name"] == archiveName {
-
-	// 		archivePresent := reflect.DeepEqual(archiveDefinition.(map[string]interface{})["defaultComputeNetworkConfig"], config["defaultComputeNetworkConfig"])
-	// 		if archivePresent {
-	// 			return fmt.Sprintf("No change required. The '%s' archive location is already configured for CloudOn.", archiveName), nil
-
-	// 		}
-
-	// 		archiveID := (v.(interface{}).(map[string]interface{})["id"])
-	// 		apiRequest, err := c.Patch("internal", fmt.Sprintf("/archive/object_store/%s", archiveID), config, httpTimeout)
-	// 		if err != nil {
-	// 			return nil, err
-	// 		}
-
-	// 		return apiRequest, err
-
-	// 	}
-
-	// }
-
 }
 
 // AzureCloudOut configures a new Azure archive target.
@@ -952,13 +918,6 @@ func (c *Credentials) AzureCloudOut(container, azureAccessKey, storageAccountNam
 	}
 
 	return status, nil
-
-	// apiRequest, err := c.Post("internal", "/archive/object_store", config, httpTimeout)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// return apiRequest, nil
 
 }
 
