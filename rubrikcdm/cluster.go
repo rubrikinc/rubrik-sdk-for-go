@@ -59,8 +59,17 @@ type ClusterProperties struct {
 	LatestEulaVersion   string `json:"latestEulaVersion"`
 }
 
+// StatusCode is used when the only API response is a status code
 type StatusCode struct {
 	StatusCode int `json:"statusCode"`
+}
+
+// Syslog corresponds to POST /internal/syslog
+type Syslog struct {
+	Hostname string `json:"hostname"`
+	Port     int    `json:"port"`
+	Protocol string `json:"protocol"`
+	ID       string `json:"id"`
 }
 
 // ClusterVersion returns the CDM version of the Rubrik cluster.
@@ -359,7 +368,7 @@ func (c *Credentials) ConfigureNTP(ntpServers []string, timeout ...int) (*Status
 //	No change required. The Rubrik cluster is already configured to use the syslog server '{syslogIP}' on port '{port}' using the '{protocol}' protocol.
 //
 //	The full API response for POST /internal/syslog
-func (c *Credentials) ConfigureSyslog(syslogIP, protocol string, port float64, timeout ...int) (interface{}, error) {
+func (c *Credentials) ConfigureSyslog(syslogIP, protocol string, port float64, timeout ...int) (*Syslog, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -405,7 +414,7 @@ func (c *Credentials) ConfigureSyslog(syslogIP, protocol string, port float64, t
 			}
 
 		} else {
-			return fmt.Sprintf("No change required. The Rubrik cluster is already configured to use the syslog server '%s' on port '%d' using the '%s' protocol.", syslogIP, int(port), protocol), nil
+			return nil, fmt.Errorf("No change required. The Rubrik cluster is already configured to use the syslog server '%s' on port '%d' using the '%s' protocol", syslogIP, int(port), protocol)
 		}
 
 	}
@@ -415,7 +424,14 @@ func (c *Credentials) ConfigureSyslog(syslogIP, protocol string, port float64, t
 		return nil, err
 	}
 
-	return apiRequest, nil
+	// Convert the API Response (map[string]interface{}) to a struct
+	var apiResponse Syslog
+	mapErr := mapstructure.Decode(apiRequest, &apiResponse)
+	if mapErr != nil {
+		return nil, mapErr
+	}
+
+	return &apiResponse, nil
 }
 
 // ConfigureDNSServers provides the connection information for the DNS Servers used by the Rubrik cluster.
