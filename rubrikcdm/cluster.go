@@ -28,7 +28,7 @@ type ClusterVersion struct {
 	Version string `json:"version"`
 }
 
-// EndUserAuthorization corresponds to /internal/authorization/role/end_user
+// EndUserAuthorization corresponds to POST /internal/authorization/role/end_user
 type EndUserAuthorization struct {
 	HasMore bool `json:"hasMore"`
 	Data    []struct {
@@ -41,6 +41,22 @@ type EndUserAuthorization struct {
 		OrganizationID string `json:"organizationId"`
 	} `json:"data"`
 	Total int `json:"total"`
+}
+
+// ClusterProperties corresponds to PATCH /v1/cluster/{id}
+type ClusterProperties struct {
+	ID         string `json:"id"`
+	Version    string `json:"version"`
+	APIVersion string `json:"apiVersion"`
+	Name       string `json:"name"`
+	Timezone   struct {
+		Timezone string `json:"timezone"`
+	} `json:"timezone"`
+	Geolocation struct {
+		Address string `json:"address"`
+	} `json:"geolocation"`
+	AcceptedEulaVersion string `json:"acceptedEulaVersion"`
+	LatestEulaVersion   string `json:"latestEulaVersion"`
 }
 
 // ClusterVersion returns the CDM version of the Rubrik cluster.
@@ -203,7 +219,7 @@ func (c *Credentials) EndUserAuthorization(objectName, endUser, objectType strin
 //	No change required. The Rubrik cluster is already configured with '{timezone}' as it's timezone.
 //
 //	The full API response for POST /v1/cluster/me
-func (c *Credentials) ConfigureTimezone(timezone string, timeout ...int) (interface{}, error) {
+func (c *Credentials) ConfigureTimezone(timezone string, timeout ...int) (*ClusterProperties, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -253,7 +269,7 @@ func (c *Credentials) ConfigureTimezone(timezone string, timeout ...int) (interf
 	}
 
 	if clusterSummary.(map[string]interface{})["timezone"].(map[string]interface{})["timezone"] == timezone {
-		return fmt.Sprintf("No change required. The Rubrik cluster is already configured with '%s' as it's timezone.", timezone), nil
+		return nil, fmt.Errorf("No change required. The Rubrik cluster is already configured with '%s' as it's timezone.", timezone)
 	}
 
 	config := map[string]interface{}{}
@@ -265,7 +281,14 @@ func (c *Credentials) ConfigureTimezone(timezone string, timeout ...int) (interf
 		return nil, err
 	}
 
-	return apiRequest, nil
+	// Convert the API Response (map[string]interface{}) to a struct
+	var apiResponse ClusterProperties
+	mapErr := mapstructure.Decode(apiRequest, &apiResponse)
+	if mapErr != nil {
+		return nil, mapErr
+	}
+
+	return &apiResponse, nil
 
 }
 
