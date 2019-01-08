@@ -59,6 +59,10 @@ type ClusterProperties struct {
 	LatestEulaVersion   string `json:"latestEulaVersion"`
 }
 
+type StatusCode struct {
+	StatusCode int `json:"statusCode"`
+}
+
 // ClusterVersion returns the CDM version of the Rubrik cluster.
 func (c *Credentials) ClusterVersion() (string, error) {
 	apiRequest, err := c.Get("v1", "/cluster/me/version")
@@ -298,7 +302,7 @@ func (c *Credentials) ConfigureTimezone(timezone string, timeout ...int) (*Clust
 //	No change required. The NTP server(s) {ntpServers} has already been added to the Rubrik cluster.
 //
 //	The full API response for POST /internal/cluster/me/ntp_server
-func (c *Credentials) ConfigureNTP(ntpServers []string, timeout ...int) (interface{}, error) {
+func (c *Credentials) ConfigureNTP(ntpServers []string, timeout ...int) (*StatusCode, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -329,10 +333,18 @@ func (c *Credentials) ConfigureNTP(ntpServers []string, timeout ...int) (interfa
 		if err != nil {
 			return nil, err
 		}
-		return apiRequest, nil
+
+		// Convert the API Response (map[string]interface{}) to a struct
+		var apiResponse StatusCode
+		mapErr := mapstructure.Decode(apiRequest, &apiResponse)
+		if mapErr != nil {
+			return nil, mapErr
+		}
+
+		return &apiResponse, nil
 	}
 
-	return fmt.Sprintf("No change required. The NTP server(s) %s has already been added to the Rubrik cluster.", ntpServers), nil
+	return nil, fmt.Errorf("No change required. The NTP server(s) %s has already been added to the Rubrik cluster", ntpServers)
 
 }
 
