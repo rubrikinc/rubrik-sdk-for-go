@@ -453,6 +453,103 @@ func ExampleCredentials_AddAWSNativeAccount() {
 	}
 }
 
+func ExampleCredentials_RemoveAWSAccount() {
+	rubrik, err := rubrikcdm.ConnectEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	awsAccountName := "GO SDK Demo" // This is the name that will be displayed in the Rubrik UI
+	deleteSnapshots := true
+
+	removeAWSAccount, err := rubrik.RemoveAWSAccount(awsAccountName, deleteSnapshots)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
+func ExampleCredentials_UpdateAWSNativeAccount() {
+	rubrik, err := rubrikcdm.ConnectEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	awsAccountName := "GO SDK Demo" // This is the name that will be displayed in the Rubrik UI
+	newAWSAccountName := "GO SDK"
+
+	config := make(map[string]interface{})
+	config["name"] = newAWSAccountName
+
+	updateAWSAccount, err := rubrik.UpdateAWSNativeAccount(awsAccountName, config)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
+func ExampleCredentials_CloudObjectStore() {
+	rubrik, err := rubrikcdm.ConnectEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	archiveLocations, err := rubrik.CloudObjectStore()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
+func ExampleCredentials_AWSAccountSummary() {
+	rubrik, err := rubrikcdm.ConnectEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	awasAccountName := "Go SDK"
+
+	awsSummary, err := rubrik.AWSAccountSummary(awasAccountName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
+func ExampleCredentials_RemoveArchiveLocation() {
+	rubrik, err := rubrikcdm.ConnectEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	archiveName := "Go SDK"
+
+	removeArchive, err := rubrik.RemoveArchiveLocation(archiveName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
+func ExampleCredentials_UpdateCloudArchiveLocation() {
+	rubrik, err := rubrikcdm.ConnectEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	archiveName := "Go SDK"
+	storageClass := "standard"
+
+	config := make(map[string]interface{})
+	config["storageClass"] = storageClass
+
+	updateArchive, err := rubrik.UpdateCloudArchiveLocation(archiveName, config)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
 func ExampleCredentials_AWSS3CloudOutRSA() {
 	rubrik, err := rubrikcdm.ConnectEnv()
 	if err != nil {
