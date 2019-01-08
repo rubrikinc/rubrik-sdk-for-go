@@ -72,6 +72,16 @@ type Syslog struct {
 	ID       string `json:"id"`
 }
 
+// SMTP corresponds to PATCH /internal/smtp_instance/{id}
+type SMTP struct {
+	ID           string `json:"id"`
+	SMTPHostname string `json:"smtpHostname"`
+	SMTPPort     int    `json:"smtpPort"`
+	SMTPSecurity string `json:"smtpSecurity"`
+	SMTPUsername string `json:"smtpUsername"`
+	FromEmailID  string `json:"fromEmailId"`
+}
+
 // ClusterVersion returns the CDM version of the Rubrik cluster.
 func (c *Credentials) ClusterVersion() (string, error) {
 	apiRequest, err := c.Get("v1", "/cluster/me/version")
@@ -440,7 +450,7 @@ func (c *Credentials) ConfigureSyslog(syslogIP, protocol string, port float64, t
 //	No change required. The Rubrik cluster is already configured with the provided DNS servers.
 //
 //	The full API response for POST /internal/cluster/me/dns_nameserver
-func (c *Credentials) ConfigureDNSServers(serverIP []string, timeout ...int) (interface{}, error) {
+func (c *Credentials) ConfigureDNSServers(serverIP []string, timeout ...int) (*StatusCode, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -450,7 +460,7 @@ func (c *Credentials) ConfigureDNSServers(serverIP []string, timeout ...int) (in
 	}
 
 	if stringEq(serverIP, currentDNSServers.(map[string]interface{})["data"].([]interface{})) {
-		return "No change required. The Rubrik cluster is already configured with the provided DNS servers", nil
+		return nil, errors.New("No change required. The Rubrik cluster is already configured with the provided DNS servers")
 	}
 
 	apiRequest, err := c.Post("internal", "/cluster/me/dns_nameserver", serverIP, httpTimeout)
@@ -458,7 +468,14 @@ func (c *Credentials) ConfigureDNSServers(serverIP []string, timeout ...int) (in
 		return nil, err
 	}
 
-	return apiRequest, nil
+	// Convert the API Response (map[string]interface{}) to a struct
+	var apiResponse StatusCode
+	mapErr := mapstructure.Decode(apiRequest, &apiResponse)
+	if mapErr != nil {
+		return nil, mapErr
+	}
+
+	return &apiResponse, nil
 
 }
 
@@ -468,7 +485,7 @@ func (c *Credentials) ConfigureDNSServers(serverIP []string, timeout ...int) (in
 //	No change required. The Rubrik cluster is already configured with the provided DNS search domains.
 //
 //	The full API response for POST /internal/cluster/me/dns_search_domain
-func (c *Credentials) ConfigureSearchDomain(searchDomain []string, timeout ...int) (interface{}, error) {
+func (c *Credentials) ConfigureSearchDomain(searchDomain []string, timeout ...int) (*StatusCode, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -478,7 +495,7 @@ func (c *Credentials) ConfigureSearchDomain(searchDomain []string, timeout ...in
 	}
 
 	if stringEq(searchDomain, currentSearchDomains.(map[string]interface{})["data"].([]interface{})) {
-		return "No change required. The Rubrik cluster is already configured with the provided DNS search domains.", nil
+		return nil, errors.New("No change required. The Rubrik cluster is already configured with the provided DNS search domains")
 	}
 
 	apiRequest, err := c.Post("internal", "/cluster/me/dns_search_domain", searchDomain, httpTimeout)
@@ -486,7 +503,14 @@ func (c *Credentials) ConfigureSearchDomain(searchDomain []string, timeout ...in
 		return nil, err
 	}
 
-	return apiRequest, nil
+	// Convert the API Response (map[string]interface{}) to a struct
+	var apiResponse StatusCode
+	mapErr := mapstructure.Decode(apiRequest, &apiResponse)
+	if mapErr != nil {
+		return nil, mapErr
+	}
+
+	return &apiResponse, nil
 }
 
 // ConfigureSMTPSettings provides the connection information to send notification email messages for delivery to
@@ -502,7 +526,7 @@ func (c *Credentials) ConfigureSearchDomain(searchDomain []string, timeout ...in
 //	The full API response for POST /internal/smtp_instance
 //
 // The full API response for PATCH /smtp_instance/{smtpID}
-func (c *Credentials) ConfigureSMTPSettings(hostname, fromEmail, smtpUsername, smtpPassword, encryption string, port int, timeout ...int) (interface{}, error) {
+func (c *Credentials) ConfigureSMTPSettings(hostname, fromEmail, smtpUsername, smtpPassword, encryption string, port int, timeout ...int) (*SMTP, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -535,7 +559,14 @@ func (c *Credentials) ConfigureSMTPSettings(hostname, fromEmail, smtpUsername, s
 			return nil, err
 		}
 
-		return apiRequest, nil
+		// Convert the API Response (map[string]interface{}) to a struct
+		var apiResponse SMTP
+		mapErr := mapstructure.Decode(apiRequest, &apiResponse)
+		if mapErr != nil {
+			return nil, mapErr
+		}
+
+		return &apiResponse, nil
 
 	}
 
@@ -548,7 +579,7 @@ func (c *Credentials) ConfigureSMTPSettings(hostname, fromEmail, smtpUsername, s
 
 	checkConfig := reflect.DeepEqual(config, currentSMTPSettings)
 	if checkConfig {
-		return fmt.Sprintf("No change required. The Rubrik cluster is already configured with the provided SMTP settings."), nil
+		return nil, fmt.Errorf("No change required. The Rubrik cluster is already configured with the provided SMTP settings")
 	}
 
 	apiRequest, err := c.Patch("internal", fmt.Sprintf("/smtp_instance/%s", smtpID), config, httpTimeout)
@@ -556,7 +587,14 @@ func (c *Credentials) ConfigureSMTPSettings(hostname, fromEmail, smtpUsername, s
 		return nil, err
 	}
 
-	return apiRequest, nil
+	// Convert the API Response (map[string]interface{}) to a struct
+	var apiResponse SMTP
+	mapErr := mapstructure.Decode(apiRequest, &apiResponse)
+	if mapErr != nil {
+		return nil, mapErr
+	}
+
+	return &apiResponse, nil
 
 }
 
@@ -567,7 +605,7 @@ func (c *Credentials) ConfigureSMTPSettings(hostname, fromEmail, smtpUsername, s
 //	No change required. The Rubrik cluster is already configured with the provided VLAN information.
 //
 //	The full API response for POST /internal/cluster/me/vlan
-func (c *Credentials) ConfigureVLAN(netmask string, vlan int, ips map[string]string, timeout ...int) (interface{}, error) {
+func (c *Credentials) ConfigureVLAN(netmask string, vlan int, ips map[string]string, timeout ...int) (*StatusCode, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -592,7 +630,7 @@ func (c *Credentials) ConfigureVLAN(netmask string, vlan int, ips map[string]str
 
 		checkConfig := reflect.DeepEqual(config, currentVLANs)
 		if checkConfig {
-			return "No change required. The Rubrik cluster is already configured with the provided VLAN information.", nil
+			return nil, errors.New("No change required. The Rubrik cluster is already configured with the provided VLAN information")
 		}
 
 	}
@@ -601,7 +639,14 @@ func (c *Credentials) ConfigureVLAN(netmask string, vlan int, ips map[string]str
 		return nil, err
 	}
 
-	return apiRequest, nil
+	// Convert the API Response (map[string]interface{}) to a struct
+	var apiResponse StatusCode
+	mapErr := mapstructure.Decode(apiRequest, &apiResponse)
+	if mapErr != nil {
+		return nil, mapErr
+	}
+
+	return &apiResponse, nil
 
 }
 
