@@ -656,7 +656,7 @@ func (c *Credentials) ConfigureVLAN(netmask string, vlan int, ips map[string]str
 //	No change required. The vCenter '{vcenterIP}' has already been added to the Rubrik cluster.
 //
 //	The full API response for POST /v1/vmware/vcenter
-func (c *Credentials) AddvCenter(vCenterIP, vCenterUsername, vCenterPassword string, vmLinking bool, timeout ...int) (string, error) {
+func (c *Credentials) AddvCenter(vCenterIP, vCenterUsername, vCenterPassword string, vmLinking bool, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -687,7 +687,19 @@ func (c *Credentials) AddvCenter(vCenterIP, vCenterUsername, vCenterPassword str
 		return "", err
 	}
 
-	return apiRequest.(map[string]interface{})["links"].([]interface{})[0].(map[string]interface{})["href"].(string), nil
+	// Convert the API Response (map[string]interface{}) to a struct
+	var addVcenter JobStatus
+	mapErr := mapstructure.Decode(apiRequest, &addVcenter)
+	if mapErr != nil {
+		return nil, mapErr
+	}
+
+	status, err := c.JobStatus(addVcenter.Links[0].Href)
+	if err != nil {
+		return nil, err
+	}
+
+	return status, nil
 
 }
 
@@ -697,7 +709,7 @@ func (c *Credentials) AddvCenter(vCenterIP, vCenterUsername, vCenterPassword str
 //	No change required. The vCenter '{vcenterIP}' has already been added to the Rubrik cluster.
 //
 //	The full API response for POST /v1/vmware/vcenter
-func (c *Credentials) AddvCenterWithCert(vCenterIP, vCenterUsername, vCenterPassword, caCertificate string, vmLinking bool, timeout ...int) (string, error) {
+func (c *Credentials) AddvCenterWithCert(vCenterIP, vCenterUsername, vCenterPassword, caCertificate string, vmLinking bool, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -729,7 +741,19 @@ func (c *Credentials) AddvCenterWithCert(vCenterIP, vCenterUsername, vCenterPass
 		return "", err
 	}
 
-	return apiRequest.(map[string]interface{})["links"].([]interface{})[0].(map[string]interface{})["href"].(string), nil
+	// Convert the API Response (map[string]interface{}) to a struct
+	var addVcenter JobStatus
+	mapErr := mapstructure.Decode(apiRequest, &addVcenter)
+	if mapErr != nil {
+		return nil, mapErr
+	}
+
+	status, err := c.JobStatus(addVcenter.Links[0].Href)
+	if err != nil {
+		return nil, err
+	}
+
+	return status, nil
 
 }
 
