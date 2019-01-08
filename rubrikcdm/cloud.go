@@ -398,11 +398,11 @@ func (c *Credentials) AddAWSNativeAccount(awsAccountName, awsAccessKey, awsSecre
 }
 
 // RemoveAWSAccount deletes the specific AWS account from the Rubrik clsuter
-func (c *Credentials) RemoveAWSAccount(archiveName string, deleteExsitingSnapshots bool, timeout ...int) (interface{}, error) {
+func (c *Credentials) RemoveAWSAccount(awsAccountName string, deleteExsitingSnapshots bool, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
-	awsAccountSummary, err := c.AWSAccountSummary(archiveName)
+	awsAccountSummary, err := c.AWSAccountSummary(awsAccountName)
 	if err != nil {
 		return nil, err
 	}
