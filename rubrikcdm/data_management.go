@@ -15,7 +15,31 @@ package rubrikcdm
 import (
 	"errors"
 	"fmt"
+
+	"github.com/mitchellh/mapstructure"
 )
+
+// EndManagedVolumeSnapshot corresponds to POST /internal/managed_volume/{id}/end_snapshot
+type EndManagedVolumeSnapshot struct {
+	ID                     string   `json:"id"`
+	Date                   string   `json:"date"`
+	ExpirationDate         string   `json:"expirationDate"`
+	SourceObjectType       string   `json:"sourceObjectType"`
+	IsOnDemandSnapshot     bool     `json:"isOnDemandSnapshot"`
+	CloudState             int      `json:"cloudState"`
+	ConsistencyLevel       string   `json:"consistencyLevel"`
+	IndexState             int      `json:"indexState"`
+	ReplicationLocationIds []string `json:"replicationLocationIds"`
+	ArchivalLocationIds    []string `json:"archivalLocationIds"`
+	SLAID                  string   `json:"slaId"`
+	SLAName                string   `json:"slaName"`
+	Links                  struct {
+		Self struct {
+			Href string `json:"href"`
+			Rel  string `json:"rel"`
+		} `json:"self"`
+	} `json:"links"`
+}
 
 // ObjectID will search the Rubrik cluster for the provided "objectName" and return its ID/
 //
@@ -116,7 +140,7 @@ func (c *Credentials) ObjectID(objectName, objectType string, hostOS ...string) 
 //	No change required. The vSphere VM '{objectName}' is already assigned to the '{slaName}' SLA Domain.
 //
 //	The full API response for POST /internal/sla_domain/{slaID}/assign.
-func (c *Credentials) AssignSLA(objectName, objectType, slaName string, timeout ...int) (interface{}, error) {
+func (c *Credentials) AssignSLA(objectName, objectType, slaName string, timeout ...int) (*StatusCode, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -164,7 +188,7 @@ func (c *Credentials) AssignSLA(objectName, objectType, slaName string, timeout 
 		}
 
 		if slaID == currentSLAID {
-			return fmt.Sprintf("No change required. The vSphere VM '%s' is already assigned to the '%s' SLA Domain.", objectName, slaName), nil
+			return nil, fmt.Errorf("No change required. The vSphere VM '%s' is already assigned to the '%s' SLA Domain", objectName, slaName)
 		}
 
 		config["managedIds"] = []string{vmID}
@@ -174,7 +198,14 @@ func (c *Credentials) AssignSLA(objectName, objectType, slaName string, timeout 
 		return nil, err
 	}
 
-	return apiRequest, nil
+	// Convert the API Response (map[string]interface{}) to a struct
+	var apiResponse StatusCode
+	mapErr := mapstructure.Decode(apiRequest, &apiResponse)
+	if mapErr != nil {
+		return nil, mapErr
+	}
+
+	return &apiResponse, nil
 }
 
 // BeginManagedVolumeSnapshot opens a managed volume for writes. All writes to the managed volume until the snapshot is
@@ -184,7 +215,7 @@ func (c *Credentials) AssignSLA(objectName, objectType, slaName string, timeout 
 //	No change required. The Managed Volume '{name}' is already in a writeable state.
 //
 //	The full API response for POST /internal/managed_volume/{managedVolumeID}/begin_snapshot
-func (c *Credentials) BeginManagedVolumeSnapshot(name string, timeout ...int) (interface{}, error) {
+func (c *Credentials) BeginManagedVolumeSnapshot(name string, timeout ...int) (*StatusCode, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -193,13 +224,15 @@ func (c *Credentials) BeginManagedVolumeSnapshot(name string, timeout ...int) (i
 		return nil, err
 	}
 
+	fmt.Println(managedVolumeID)
+
 	managedVolumeSummary, err := c.Get("internal", fmt.Sprintf("/managed_volume/%s", managedVolumeID), httpTimeout)
 	if err != nil {
 		return nil, err
 	}
 
 	if managedVolumeSummary.(map[string]interface{})["isWritable"].(bool) {
-		return fmt.Sprintf("No change required. The Managed Volume '%s' is already in a writeable state.", name), nil
+		return nil, fmt.Errorf("No change required. The Managed Volume '%s' is already in a writeable state", name)
 	}
 
 	config := map[string]string{}
@@ -209,7 +242,14 @@ func (c *Credentials) BeginManagedVolumeSnapshot(name string, timeout ...int) (i
 		return nil, err
 	}
 
-	return apiRequest, nil
+	// Convert the API Response (map[string]interface{}) to a struct
+	var apiResponse StatusCode
+	mapErr := mapstructure.Decode(apiRequest, &apiResponse)
+	if mapErr != nil {
+		return nil, mapErr
+	}
+
+	return &apiResponse, nil
 }
 
 // EndManagedVolumeSnapshot closes a managed volume for writes. A snapshot will be created containing all writes since the last begin snapshot call.
@@ -218,7 +258,7 @@ func (c *Credentials) BeginManagedVolumeSnapshot(name string, timeout ...int) (i
 //	No change required. The Managed Volume '{name}' is already in a read-only state.
 //
 //	The full API response for POST /internal/managed_volume/{managedVolumeID}/end_snapshot
-func (c *Credentials) EndManagedVolumeSnapshot(name, slaName string, timeout ...int) (interface{}, error) {
+func (c *Credentials) EndManagedVolumeSnapshot(name, slaName string, timeout ...int) (*EndManagedVolumeSnapshot, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -233,7 +273,7 @@ func (c *Credentials) EndManagedVolumeSnapshot(name, slaName string, timeout ...
 	}
 
 	if managedVolumeSummary.(map[string]interface{})["isWritable"].(bool) == false {
-		return fmt.Sprintf("No change required. The Managed Volume '%s' is already in a read-only state.", name), nil
+		return nil, fmt.Errorf("No change required. The Managed Volume '%s' is already in a read-only state.", name)
 	}
 
 	var slaID string
@@ -250,8 +290,18 @@ func (c *Credentials) EndManagedVolumeSnapshot(name, slaName string, timeout ...
 	}
 
 	apiRequest, err := c.Post("internal", fmt.Sprintf("/managed_volume/%s/end_snapshot", managedVolumeID), config, httpTimeout)
+	if err != nil {
+		return nil, err
+	}
 
-	return apiRequest, nil
+	// Convert the API Response (map[string]interface{}) to a struct
+	var endSnapshot EndManagedVolumeSnapshot
+	mapErr := mapstructure.Decode(apiRequest, &endSnapshot)
+	if mapErr != nil {
+		return nil, mapErr
+	}
+
+	return &endSnapshot, nil
 
 }
 
