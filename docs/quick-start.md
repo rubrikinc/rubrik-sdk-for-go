@@ -1,4 +1,4 @@
-# Quickstart Guide: Rubrik SDK for Go
+# Quick Start Guide: Rubrik SDK for Go
 
 ## Introduction to the Rubrik SDK for Go
 
@@ -88,13 +88,13 @@ fmt.Println(rubrik.GetSLAObjects("Gold","vmware"))
 
 For a full list of functions, methods, and their associated arguments see the official [Rubrik SDK for Go documentation](https://godoc.org/github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm).
 
-## Rubrik SDK for Go Quickstart
+## Rubrik SDK for Go Quick Start
 
 The following section outlines how to get started using the Rubrik SDK for Go, including installation, configuration, as well as sample code.
 
 ### Prerequisites
 
-The following are the prerequisites in order to successfully install and run the sample code included in this quickstart guide:
+The following are the prerequisites in order to successfully install and run the sample code included in this quick start guide:
 
 * [Go](https://golang.org/doc/install)
 * Rubrik CDM
