@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -152,12 +153,38 @@ func (c *Credentials) ClusterNodeName() ([]string, error) {
 
 // ClusterBootstrapStatus checks whether the cluster has been bootstrapped.
 func (c *Credentials) ClusterBootstrapStatus() (bool, error) {
-	apiRequest, err := c.Get("internal", "/node_management/is_bootstrapped")
-	if err != nil {
-		return false, err
+	numberOfAttempts := 0
+	for {
+		numberOfAttempts++
+
+		apiRequest, err := c.Get("internal", "/node_management/is_bootstrapped")
+		if err != nil {
+
+			// Give the cluster 4 minutes to start responding to API calls before returning an error
+			if strings.Contains(err.Error(), "connection refused") {
+				if numberOfAttempts == 24 {
+					return false, err
+				}
+			} else if strings.Contains(err.Error(), "Unable to establish a connection") {
+
+				if numberOfAttempts == 6 {
+					fmt.Println("Attempts = 6 and error")
+					return false, err
+				}
+
+			} else {
+				return false, err
+
+			}
+		}
+
+		if err == nil {
+			return apiRequest.(map[string]interface{})["value"].(bool), nil
+		}
+		time.Sleep(10 * time.Second)
+
 	}
 
-	return apiRequest.(map[string]interface{})["value"].(bool), nil
 }
 
 // EndUserAuthorization assigns an End User account privileges for a VMware virtual machine. vmware is currently the only
@@ -800,12 +827,12 @@ func (c *Credentials) Bootstrap(clusterName, adminEmail, adminPassword, manageme
 		config["nodeConfigs"].(map[string]interface{})[nodeName].(map[string]interface{})["managementIpConfig"].(map[string]string)["address"] = nodeIP
 	}
 
-	currentBootstrapStatus, err := c.Get("internal", "/node_management/is_bootstrapped", httpTimeout)
+	currentBootstrapStatus, err := c.ClusterBootstrapStatus()
 	if err != nil {
 		return nil, err
 	}
 
-	if currentBootstrapStatus.(map[string]interface{})["value"].(bool) == true {
+	if currentBootstrapStatus == true {
 		return "The provided Rubrik node is already bootstrapped.", nil
 	}
 
