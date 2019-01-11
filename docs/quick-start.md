@@ -70,8 +70,9 @@ To initiate the function, first import the rubrikcdm package and assign the resp
 
 ```go
 import "github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
-rubrik := rubrikcdm.ConnectEnv()
+rubrik, err := rubrikcdm.ConnectEnv()
 ```
+Any error returned by the `ConnectEnv()` function will be stored in the `err` variable. Error handling code is demonstrated in the sample code below.
 
 | Note: You may use any variable name to connect to the Rubrik cluster. |
 | --- |
@@ -120,53 +121,82 @@ package main
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
 )
 
 func main() {
+
 	// Establish a connection to the Rubrik cluster
-	rubrik := rubrikcdm.ConnectEnv()
+	rubrik, err := rubrikcdm.ConnectEnv()
+
+	// Check for error conditions
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	/*=============================================================
-	  # Example of protecting a VMware Virtual Machine
-	  =============================================================*/
+	  Example of protecting a VMware Virtual Machine
+	 =============================================================*/
 
 	// Set Function Variables
 	objectName := "vm01"
 	objectType := "vmware"
-	slaName := "Bronze"
+	slaName := "Gold"
 
 	// Assign VM to SLA Domain
-	rubrik.AssignSLA(objectName, objectType, slaName)
+	_, err = rubrik.AssignSLA(objectName, objectType, slaName)
 
-	/*=============================================================
-	  # Example of taking an On-Demand Snapshot of a VMware VM
-	  =============================================================*/
+	// Check for error conditions
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	/*===========================================================
+	  Example of taking an On-Demand Snapshot of a VMware VM
+	  ===========================================================*/
 
 	// Set Function Variables
 	vmName := "vm02"
-	objectType := "vmware"
-	slaName := "current"
+	objectType = "vmware"
+	slaName = "current"
 
 	// Take On-Demand Snapshot of VM
-	rubrik.OnDemandSnapshotVM(vmName, objectType, slaName)
+	_, err = rubrik.OnDemandSnapshotVM(vmName, objectType, slaName)
 
-	/*=============================================================
-	  # Example using a GET API call to obtain VM info
-	  =============================================================*/
+	// Check for error conditions
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	vmName := "vm03"
-	objectType := "vmware"
-	vmID := rubrik.ObjectID(vmName, objectType)
+	/*============================================================
+	  Example using a GET API call to obtain VM info
+	  ===========================================================*/
+
+	vmName = "vm03"
+	objectType = "vmware"
+
+	// Get VM Object ID
+	vmID, err := rubrik.ObjectID(vmName, objectType)
+
+	// Check for error conditions
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Create the API endpoint address based on VM ID
 	apiPath := fmt.Sprintf("/vmware/vm/%s", vmID)
 
 	// Send the GET request via API and save the response
-	vmInfo := rubrik.Get("v1", apiPath)
+	vmInfo, err := rubrik.Get("v1", apiPath)
+
+	// Check for error conditions
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Loop through the API response and print desired values
-
 	for key, value := range vmInfo.(map[string]interface{}) {
 		switch t := value.(type) {
 		case string:
@@ -184,11 +214,11 @@ func main() {
 
 After importing the needed modules and connecting to the Rubrik cluster, the main examples start on Line 8.
 
-**Lines 8 through 20** show an example of associating an existing SLA Domain with a VMware VM. The `AssignSLA()` function is utilized to accomplish this, taking in three arguments; the VM name, Object Type (vmware), and SLA Domain name.
+**Lines 20 through 35** show an example of associating an existing SLA Domain with a VMware VM. The `AssignSLA()` function is utilized to accomplish this, taking in three arguments; the VM name, Object Type (vmware), and SLA Domain name.
 
-**Lines 22 through 32** illustrates performing an on-demand snapshot of a VMware VM. The `OnDemandSnapshotVM()` function is utilized to accomplish this, taking in three arguments; the VM name, object type (vmware), and SLA Domain name to apply to the snapshot.
+**Lines 37 through 52** illustrates performing an on-demand snapshot of a VMware VM. The `OnDemandSnapshotVM()` function is utilized to accomplish this, taking in three arguments; the VM name, object type (vmware), and SLA Domain name to apply to the snapshot.
 
-**Lines 34 through 56** obtains the ID of a VM protected by Rubrik, and uses the `Get()` function to gather details about the VM. A for loop is used to iterate through the API response and display details about the VM to the user.
+**Lines 54 through 90** obtains the ID of a VM protected by Rubrik, and uses the `Get()` function to gather details about the VM. A for loop is used to iterate through the API response and display details about the VM to the user.
 
 #### Running the Sample Workflow
 
@@ -219,25 +249,51 @@ The Rubrik SDK for Go supports much of the functionality available within the Ru
 ```go
 package main
 
-import "github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
+import (
+	"log"
+
+	"github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
+)
 
 func main() {
-  rubrik := rubrikcdm.ConnectEnv()
+	// Establish a connection to the Rubrik cluster
+	rubrik, err := rubrikcdm.ConnectEnv()
 
-  vmName := "vm10”
-  slaName := "Gold"
-  apiPath1 := "/vmware/vm?name=" + vmName
-  apiPath2 := "/sla_domain?name=" + slaName
+	// Check for error conditions
+	if err != nil {
+		log.Fatal(err)
+	}
 
-  response1 := rubrik.Get("v1", apiPath1).(map[string]interface{})
-  vmID := response1["data"].([]interface{})[0].(map[string]interface{})["id"]
+	vmName := "vm01"
+	slaName := "Gold"
+	apiPath1 := "/vmware/vm?name=" + vmName
+	apiPath2 := "/sla_domain?name=" + slaName
 
-  response2 := rubrik.Get("v1", apiPath2).(map[string]interface{})
-  slaID := response2["data"].([]interface{})[0].(map[string]interface{})["id"]
+	// Perform a GET to obtain the VM ID
+	response1, err := rubrik.Get("v1", apiPath1)
 
-  config := map[string]string{}
-  config["configuredSlaDomainId"] = slaID.(string)
-  rubrik.Patch("v1", "/vmware/vm/"+vmID.(string), config)
+	// Check for error conditions
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	vmID := response1.(map[string]interface{})["data"].([]interface{})[0].(map[string]interface{})["id"]
+
+	// Perform a GET to obtain the SLA ID
+	response2, err := rubrik.Get("v1", apiPath2)
+
+	// Check for error conditions
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	slaID := response2.(map[string]interface{})["data"].([]interface{})[0].(map[string]interface{})["id"]
+
+	config := map[string]string{}
+	config["configuredSlaDomainId"] = slaID.(string)
+
+	// Perform a PATCH to set the VM SLA policy
+	rubrik.Patch("v1", "/vmware/vm/"+vmID.(string), config)
 }
 ```
 
