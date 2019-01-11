@@ -26,19 +26,32 @@ package main
 
 import (
 	"fmt"
+        "log"
+	
 	"github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
 )
 
 func main() {
 
-	rubrik := rubrikcdm.ConnectEnv()
+	rubrik, err := rubrikcdm.ConnectEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
 	
 	// GET the Rubrik cluster Version
-	clusterSummary := rubrik.Get("v1", "/cluster/me")
+	clusterSummary, err := rubrik.Get("v1", "/cluster/me")
+	if err != nil {
+		log.Fatal(err)
+	}
+	
 	fmt.Println(clusterSummary.(map[string]interface{})["version"])
 
 	// Simplified Function to determine the Rubrik cluster version
-	clusterVersion := rubrik.ClusterVersion()
+	clusterVersion, err := rubrik.ClusterVersion()
+	if err != nil {
+		log.Fatal(err)
+	}
+	
 	fmt.Println(clusterVersion)
 
 }
