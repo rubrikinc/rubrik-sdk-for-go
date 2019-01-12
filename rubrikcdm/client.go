@@ -139,7 +139,7 @@ func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config
 
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Accept", "application/json")
-	request.Header.Set("User-Agent", "Go SDK v1.0.1")
+	request.Header.Set("User-Agent", "Rubrik Go SDK v1.0.1")
 
 	apiRequest, err := client.Do(request)
 	if err, ok := err.(net.Error); ok && err.Timeout() {
