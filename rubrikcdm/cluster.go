@@ -869,3 +869,34 @@ func (c *Credentials) Bootstrap(clusterName, adminEmail, adminPassword, manageme
 
 	return bootstrap, nil
 }
+
+// RefreshvCenter updates the the metadata for the specified vCenter Server and waits for the job to complete before returning the JobStatus API response.
+func (c *Credentials) RefreshvCenter(vCenterIP string, timeout ...int) (interface{}, error) {
+
+	httpTimeout := httpTimeout(timeout)
+
+	vcenterID, err := c.ObjectID(vCenterIP, "vcenter")
+	if err != nil {
+		return nil, err
+	}
+
+	refresh, err := c.Post("v1", fmt.Sprintf("/vmware/vcenter/%s/refresh", vcenterID), httpTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert the API Response (map[string]interface{}) to a struct
+	var refreshJob JobStatus
+	mapErr := mapstructure.Decode(refresh, &refreshJob)
+	if mapErr != nil {
+		return nil, mapErr
+	}
+
+	status, err := c.JobStatus(refreshJob.Links[0].Href)
+	if err != nil {
+		return nil, err
+	}
+
+	return status, nil
+
+}
