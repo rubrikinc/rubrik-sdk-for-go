@@ -453,6 +453,21 @@ func ExampleCredentials_AddAWSNativeAccount() {
 	}
 }
 
+func ExampleCredentials_RefreshvCenter() {
+	rubrik, err := rubrikcdm.ConnectEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	vcenter_hostname := "python.demo.lab"
+
+	refresh, err := rubrik.RefreshvCenter(vcenter_host)
+	if err != nil {
+		log.Fatal(err)
+
+	}
+}
+
 func ExampleCredentials_RemoveAWSAccount() {
 	rubrik, err := rubrikcdm.ConnectEnv()
 	if err != nil {

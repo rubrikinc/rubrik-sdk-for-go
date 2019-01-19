@@ -55,10 +55,11 @@ func (c *Credentials) ObjectID(objectName, objectType string, hostOS ...string) 
 		"physicalHost":    true,
 		"filesetTemplate": true,
 		"managedVolume":   true,
+		"vcenter":         true,
 	}
 
 	if validObjectType[objectType] == false {
-		return "", fmt.Errorf("The 'objectType' must be 'vmware', 'sla', 'vmwareHost', 'physicalHost', 'filesetTemplate', or 'managedVolume'")
+		return "", fmt.Errorf("The 'objectType' must be 'vmware', 'sla', 'vmwareHost', 'physicalHost', 'filesetTemplate', 'managedVolume', or 'vcenter'.")
 	}
 
 	var objectSummaryAPIVersion string
@@ -96,6 +97,9 @@ func (c *Credentials) ObjectID(objectName, objectType string, hostOS ...string) 
 	case "managedVolume":
 		objectSummaryAPIVersion = "internal"
 		objectSummaryAPIEndpoint = fmt.Sprintf("/managed_volume?is_relic=false&primary_cluster_id=local&name=%s", objectName)
+	case "vcenter":
+		objectSummaryAPIVersion = "v1"
+		objectSummaryAPIEndpoint = "/vmware/vcenter"
 	}
 
 	apiRequest, err := c.Get(objectSummaryAPIVersion, objectSummaryAPIEndpoint)
