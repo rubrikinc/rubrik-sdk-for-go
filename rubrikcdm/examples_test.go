@@ -260,7 +260,7 @@ func ExampleCredentials_ObjectID() {
 
 	slaName := "Gold"
 
-	slaID, err := c.ObjectID(slaName, "sla")
+	slaID, err := rubrik.ObjectID(slaName, "sla")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -288,7 +288,7 @@ func ExampleCredentials_Bootstrap() {
 	nodeConfig["RVM157S018903"] = "10.77.16.198"
 	nodeConfig["RVM157S018904"] = "10.77.16.81"
 
-	bootstrap, error := rubrik.Bootstrap(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask, dnsSearchDomain, dnsNameServers, ntpServers, nodeConfig, enableEncryption, waitForCompletion)
+	bootstrap, err := rubrik.Bootstrap(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask, dnsSearchDomain, dnsNameServers, ntpServers, nodeConfig, enableEncryption, waitForCompletion)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -369,8 +369,8 @@ func ExampleCredentials_ClusterVersionCheck() {
 		log.Fatal(err)
 	}
 
-	clusterVersion, err := rubrik.ClusterVersionCheck(4.2)
-	if err != nil {
+	clusterVersion := rubrik.ClusterVersionCheck(4.2)
+	if clusterVersion != nil {
 		log.Fatal(err)
 	}
 }
@@ -461,7 +461,7 @@ func ExampleCredentials_RefreshvCenter() {
 
 	vcenter_hostname := "python.demo.lab"
 
-	refresh, err := rubrik.RefreshvCenter(vcenter_host)
+	refresh, err := rubrik.RefreshvCenter(vcenter_hostname)
 	if err != nil {
 		log.Fatal(err)
 
