@@ -17,7 +17,7 @@
 
 [SDK Documentation](https://godoc.org/github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm)
 
-[Rubrik API Documentation]( )
+[Rubrik API Documentation](https://github.com/rubrikinc/api-documentation)
 
 ## Example
 
