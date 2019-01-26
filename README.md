@@ -11,13 +11,12 @@
 
 ## Quick Start
 
-[Quick Start Guide](https://github.com/rubrikinc/rubrik-sdk-for-go/blob/master/docs/quick-start.md)
+* [Quick Start Guide](https://github.com/rubrikinc/rubrik-sdk-for-go/blob/master/docs/quick-start.md)
 
 ## Documentation
 
-[SDK Documentation](https://godoc.org/github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm)
-
-[Rubrik API Documentation](https://github.com/rubrikinc/api-documentation)
+* [SDK Documentation](https://godoc.org/github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm)
+* [Rubrik API Documentation](https://github.com/rubrikinc/api-documentation)
 
 ## Example
 
@@ -56,7 +55,6 @@ func main() {
 
 }
 ```
-
-
-
-
+## Additional Links
+* [VIDEO: Getting Started with the Rubrik SDK for Go]()
+* [BLOG: Introducing the Rubrik SDK for Go](https://www.rubrik.com/blog/rubrik-google-go-sdk/)
