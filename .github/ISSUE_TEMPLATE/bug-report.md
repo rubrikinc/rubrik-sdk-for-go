@@ -1,20 +1,12 @@
 ---
 name: Bug Report
-about: Report a bug encountered while using the Rubrik Go SDK.
+about: Report a bug encountered while using the Rubrik SDK for Go.
 title: ''
 labels: kind-bug
 assignees: ''
 
 ---
 
----
-name: Bug Report
-about: Report a bug encountered while using ''
-title: ''
-labels: kind-bug
-assignees: ''
-
----
 
 <!-- Please use this template while reporting a bug and provide as much info as possible. Not doing so may result in your bug not being addressed in a timely manner. Thanks!-->
 
