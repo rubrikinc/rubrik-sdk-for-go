@@ -56,5 +56,5 @@ func main() {
 }
 ```
 ## Additional Links
-* [VIDEO: Getting Started with the Rubrik SDK for Go]()
+* [VIDEO: Getting Started with the Rubrik SDK for Go](https://youtu.be/xklHJe0u-ZY)
 * [BLOG: Introducing the Rubrik SDK for Go](https://www.rubrik.com/blog/rubrik-google-go-sdk/)
