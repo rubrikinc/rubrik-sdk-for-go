@@ -322,6 +322,21 @@ func ExampleCredentials_ConfigureSyslog() {
 	}
 }
 
+func ExampleCredentials_RegisterCluster() {
+	rubrik, err := rubrikcdm.ConnectEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	support_portal_username := "gosdk@rubrik.com"
+	support_portal_password := "GoDummyPassword"
+
+	register, err := rubrik.RegisterCluster(support_portal_username, support_portal_password)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func ExampleCredentials_ConfigureNTP() {
 	rubrik, err := rubrikcdm.ConnectEnv()
 	if err != nil {
