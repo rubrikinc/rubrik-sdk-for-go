@@ -161,7 +161,7 @@ func (c *Credentials) ClusterBootstrapStatus() (bool, error) {
 		if err != nil {
 
 			// Give the cluster 4 minutes to start responding to API calls before returning an error
-			if strings.Contains(err.Error(), "connection refused") {
+			if strings.Contains(err.Error(), "tcp") {
 				if numberOfAttempts == 24 {
 					return false, err
 				}
@@ -319,7 +319,7 @@ func (c *Credentials) ConfigureTimezone(timezone string, timeout ...int) (*Clust
 	}
 
 	if clusterSummary.(map[string]interface{})["timezone"].(map[string]interface{})["timezone"] == timezone {
-		return nil, fmt.Errorf("No change required. The Rubrik cluster is already configured with '%s' as it's timezone.", timezone)
+		return nil, fmt.Errorf("No change required. The Rubrik cluster is already configured with '%s' as it's timezone", timezone)
 	}
 
 	config := map[string]interface{}{}
@@ -868,6 +868,39 @@ func (c *Credentials) Bootstrap(clusterName, adminEmail, adminPassword, manageme
 	}
 
 	return bootstrap, nil
+}
+
+// RegisterCluster submits the registration details for the specified Rubrik cluster. The username and password should
+// correspond to your Rubrik Support Portal account.
+func (c *Credentials) RegisterCluster(username, password string, timeout ...int) (interface{}, error) {
+
+	httpTimeout := httpTimeout(timeout)
+
+	// Change the default to 160
+	if httpTimeout == 15 {
+		httpTimeout = 60
+	}
+
+	isRegistered, err := c.Get("internal", "/cluster/me/is_registered")
+	if err != nil {
+		return nil, err
+	}
+
+	if isRegistered.(map[string]interface{})["value"] == true {
+		return "No change required. The cluster is already registered.", nil
+	}
+
+	config := map[string]interface{}{}
+	config["username"] = username
+	config["password"] = password
+
+	register, err := c.Post("internal", "/cluster/me/register", config, httpTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	return register, nil
+
 }
 
 // RefreshvCenter updates the the metadata for the specified vCenter Server and waits for the job to complete before returning the JobStatus API response.
