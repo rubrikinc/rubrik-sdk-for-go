@@ -22,6 +22,30 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
+// ExportEC2Instance corresponds to GET /aws/ec2_instance/{id}/snapshot
+type ExportEC2Instance struct {
+	HasMore bool `json:"hasMore"`
+	Data    []struct {
+		ID                     string   `json:"id"`
+		Date                   string   `json:"date"`
+		ExpirationDate         string   `json:"expirationDate"`
+		SourceObjectType       string   `json:"sourceObjectType"`
+		IsOnDemandSnapshot     bool     `json:"isOnDemandSnapshot"`
+		CloudState             int      `json:"cloudState"`
+		ConsistencyLevel       string   `json:"consistencyLevel"`
+		IndexState             int      `json:"indexState"`
+		ReplicationLocationIds []string `json:"replicationLocationIds"`
+		ArchivalLocationIds    []string `json:"archivalLocationIds"`
+		SLAID                  string   `json:"slaId"`
+		SLAName                string   `json:"slaName"`
+		AccountID              string   `json:"accountId"`
+		InstanceID             string   `json:"instanceId"`
+		ImageID                string   `json:"imageId"`
+		SnapshotVolumeIds      []string `json:"snapshotVolumeIds"`
+	} `json:"data"`
+	Total int `json:"total"`
+}
+
 // CloudObjectStore represents the JSON response for GET /internal/archive/object_store
 type CloudObjectStore struct {
 	HasMore bool `json:"hasMore"`
@@ -394,6 +418,250 @@ func (c *Credentials) AddAWSNativeAccount(awsAccountName, awsAccessKey, awsSecre
 	}
 
 	return status, nil
+
+}
+
+// ExportEC2Instance exports the latest snapshot of the specified EC2 instance.
+//
+// Valid "awsRegion" choices are:
+//
+//	ap-south-1,ap-northeast-3, ap-northeast-2, ap-southeast-1, ap-southeast-2, ap-northeast-1, ca-central-1, cn-north-1, cn-northwest-1, eu-central-1, eu-west-1,
+//	eu-west-2, eu-west-3, us-west-1, us-east-1, us-east-2, and us-west-2.
+//
+// Valid "instanceType" choices are:
+//
+// a1.medium, a1.large, a1.xlarge, a1.2xlarge, a1.4xlarge, m4.large, m4.xlarge, m4.2xlarge, m4.4xlarge, m4.10xlarge, m4.16xlarge, m5.large, m5.xlarge, m5.2xlarge,
+// m5.4xlarge, m5.12xlarge, m5.24xlarge,  m5a.large, m5a.xlarge, m5a.2xlarge, m5a.4xlarge, m5a.12xlarge, m5a.24xlarge, m5d.large, m5d.xlarge, m5d.2xlarge, m5d.4xlarge,
+// m5d.12xlarge, m5d.24xlarge, t2.nano, t2.micro, t2.small, t2.medium, t2.large, t2.xlarge, t2.2xlarge, t3.nano, t3.micro, t3.small, t3.medium, t3.large, t3.xlarge,
+// t3.2xlarge, c4.large, c4.xlarge, c4.2xlarge, c4.4xlarge, c4.8xlarge, c5.large, c5.xlarge, c5.2xlarge, c5.4xlarge, c5.9xlarge, c5.18xlarge, c5d.xlarge, c5d.2xlarge,
+// c5d.4xlarge, c5d.9xlarge, c5d.18xlarge, c5n.large, c5n.xlarge, c5n.2xlarge, c5n.4xlarge, c5n.9xlarge, c5n.18xlarge, r4.large, r4.xlarge, r4.2xlarge, r4.4xlarge,
+// r4.8xlarge, r4.16xlarge, r5.large, r5.xlarge, r5.2xlarge, r5.4xlarge, r5.12xlarge, r5.24xlarge, r5a.large, r5a.xlarge, r5a.2xlarge, r5a.4xlarge, r5a.12xlarge,
+// r5a.24xlarge, r5d.large, r5d.xlarge, r5d.2xlarge, r5d.4xlarge, r5d.12xlarge, r5d.24xlarge, x1.16xlarge, x1.32xlarge, x1e.xlarge, x1e.2xlarge, x1e.4xlarge, x1e.8xlarge,
+// x1e.16xlarge, x1e.32xlarge, z1d.large, z1d.xlarge, z1d.2xlarge, z1d.3xlarge, z1d.6xlarge, z1d.12xlarge, d2.xlarge, d2.2xlarge, d2.4xlarge, d2.8xlarge, h1.2xlarge,
+// h1.4xlarge,  h1.8xlarge, h1.16xlarge, i3.large, i3.xlarge, i3.2xlarge, i3.4xlarge, i3.8xlarge, i3.16xlarge, f1.2xlarge, f1.4xlarge, f1.16xlarge, g3s.xlarge, g3.4xlarge,
+// g3.8xlarge, g3.16xlarge, p2.xlarge, p2.8xlarge, p2.16xlarge, p3.2xlarge, p3.8xlarge, p3.16xlarge, p3dn.24xlarge,
+func (c *Credentials) ExportEC2Instance(instanceID, exportedInstanceName, instanceType, awsRegion, subnetID, securityGroupID string, waitForCompletion bool, timeout ...int) (interface{}, error) {
+
+	minimumClusterVersion := c.ClusterVersionCheck(4.2)
+	if minimumClusterVersion != nil {
+		return nil, minimumClusterVersion
+	}
+
+	httpTimeout := httpTimeout(timeout)
+
+	validAWSRegions := map[string]bool{
+		"ap-south-1":     true,
+		"ap-northeast-3": true,
+		"ap-northeast-2": true,
+		"ap-southeast-1": true,
+		"ap-southeast-2": true,
+		"ap-northeast-1": true,
+		"ca-central-1":   true,
+		"cn-north-1":     true,
+		"cn-northwest-1": true,
+		"eu-central-1":   true,
+		"eu-west-1":      true,
+		"eu-west-2":      true,
+		"eu-west-3":      true,
+		"us-west-1":      true,
+		"us-east-1":      true,
+		"us-east-2":      true,
+		"us-west-2":      true,
+	}
+
+	validInstanceTypes := map[string]bool{
+		"a1.medium":     true,
+		"a1.large":      true,
+		"a1.xlarge":     true,
+		"a1.2xlarge":    true,
+		"a1.4xlarge":    true,
+		"m4.large":      true,
+		"m4.xlarge":     true,
+		"m4.2xlarge":    true,
+		"m4.4xlarge":    true,
+		"m4.10xlarge":   true,
+		"m4.16xlarge":   true,
+		"m5.large":      true,
+		"m5.xlarge":     true,
+		"m5.2xlarge":    true,
+		"m5.4xlarge":    true,
+		"m5.12xlarge":   true,
+		"m5.24xlarge":   true,
+		"m5a.large":     true,
+		"m5a.xlarge":    true,
+		"m5a.2xlarge":   true,
+		"m5a.4xlarge":   true,
+		"m5a.12xlarge":  true,
+		"m5a.24xlarge":  true,
+		"m5d.large":     true,
+		"m5d.xlarge":    true,
+		"m5d.2xlarge":   true,
+		"m5d.4xlarge":   true,
+		"m5d.12xlarge":  true,
+		"m5d.24xlarge":  true,
+		"t2.nano":       true,
+		"t2.micro":      true,
+		"t2.small":      true,
+		"t2.medium":     true,
+		"t2.large":      true,
+		"t2.xlarge":     true,
+		"t2.2xlarge":    true,
+		"t3.nano":       true,
+		"t3.micro":      true,
+		"t3.small":      true,
+		"t3.medium":     true,
+		"t3.large":      true,
+		"t3.xlarge":     true,
+		"t3.2xlarge":    true,
+		"c4.large":      true,
+		"c4.xlarge":     true,
+		"c4.2xlarge":    true,
+		"c4.4xlarge":    true,
+		"c4.8xlarge":    true,
+		"c5.large":      true,
+		"c5.xlarge":     true,
+		"c5.2xlarge":    true,
+		"c5.4xlarge":    true,
+		"c5.9xlarge":    true,
+		"c5.18xlarge":   true,
+		"c5d.xlarge":    true,
+		"c5d.2xlarge":   true,
+		"c5d.4xlarge":   true,
+		"c5d.9xlarge":   true,
+		"c5d.18xlarge":  true,
+		"c5n.large":     true,
+		"c5n.xlarge":    true,
+		"c5n.2xlarge":   true,
+		"c5n.4xlarge":   true,
+		"c5n.9xlarge":   true,
+		"c5n.18xlarge":  true,
+		"r4.large":      true,
+		"r4.xlarge":     true,
+		"r4.2xlarge":    true,
+		"r4.4xlarge":    true,
+		"r4.8xlarge":    true,
+		"r4.16xlarge":   true,
+		"r5.large":      true,
+		"r5.xlarge":     true,
+		"r5.2xlarge":    true,
+		"r5.4xlarge":    true,
+		"r5.12xlarge":   true,
+		"r5.24xlarge":   true,
+		"r5a.large":     true,
+		"r5a.xlarge":    true,
+		"r5a.2xlarge":   true,
+		"r5a.4xlarge":   true,
+		"r5a.12xlarge":  true,
+		"r5a.24xlarge":  true,
+		"r5d.large":     true,
+		"r5d.xlarge":    true,
+		"r5d.2xlarge":   true,
+		"r5d.4xlarge":   true,
+		"r5d.12xlarge":  true,
+		"r5d.24xlarge":  true,
+		"x1.16xlarge":   true,
+		"x1.32xlarge":   true,
+		"x1e.xlarge":    true,
+		"x1e.2xlarge":   true,
+		"x1e.4xlarge":   true,
+		"x1e.8xlarge":   true,
+		"x1e.16xlarge":  true,
+		"x1e.32xlarge":  true,
+		"z1d.large":     true,
+		"z1d.xlarge":    true,
+		"z1d.2xlarge":   true,
+		"z1d.3xlarge":   true,
+		"z1d.6xlarge":   true,
+		"z1d.12xlarge":  true,
+		"d2.xlarge":     true,
+		"d2.2xlarge":    true,
+		"d2.4xlarge":    true,
+		"d2.8xlarge":    true,
+		"h1.2xlarge":    true,
+		"h1.4xlarge":    true,
+		"h1.8xlarge":    true,
+		"h1.16xlarge":   true,
+		"i3.large":      true,
+		"i3.xlarge":     true,
+		"i3.2xlarge":    true,
+		"i3.4xlarge":    true,
+		"i3.8xlarge":    true,
+		"i3.16xlarge":   true,
+		"f1.2xlarge":    true,
+		"f1.4xlarge":    true,
+		"f1.16xlarge":   true,
+		"g3s.xlarge":    true,
+		"g3.4xlarge":    true,
+		"g3.8xlarge":    true,
+		"g3.16xlarge":   true,
+		"p2.xlarge":     true,
+		"p2.8xlarge":    true,
+		"p2.16xlarge":   true,
+		"p3.2xlarge":    true,
+		"p3.8xlarge":    true,
+		"p3.16xlarge":   true,
+		"p3dn.24xlarge": true,
+	}
+
+	if validInstanceTypes[instanceType] == false {
+		return nil, fmt.Errorf("'%s' is not a valid AWS Instance Type", instanceType)
+	}
+
+	if validAWSRegions[awsRegion] == false {
+		return "", fmt.Errorf("%s is not a valid AWS Region", awsRegion)
+	}
+
+	instanceID, err := c.ObjectID(instanceID, "ec2")
+	if err != nil {
+		return nil, err
+
+	}
+
+	allSnapshots, err := c.Get("internal", fmt.Sprintf("/aws/ec2_instance/%s/snapshot", instanceID), httpTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert the API Response (map[string]interface{}) to a struct
+	var snapshot ExportEC2Instance
+	mapErr := mapstructure.Decode(allSnapshots, &snapshot)
+	if mapErr != nil {
+		return nil, mapErr
+	}
+
+	lastSnapshotID := snapshot.Data[snapshot.Total-1].ID
+
+	config := map[string]string{}
+	config["instanceName"] = exportedInstanceName
+	config["instanceType"] = instanceType
+	config["region"] = awsRegion
+	config["subnetId"] = subnetID
+	config["securityGroupId"] = securityGroupID
+
+	exportInstance, err := c.Post("internal", fmt.Sprintf("/aws/ec2_instance/snapshot/%s/export", lastSnapshotID), config, httpTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert the API Response (map[string]interface{}) to a struct
+	var export JobStatus
+	exportMapErr := mapstructure.Decode(exportInstance, &export)
+	if exportMapErr != nil {
+		return nil, exportMapErr
+	}
+
+	if waitForCompletion == true {
+
+		status, err := c.JobStatus(export.Links[0].Href)
+		if err != nil {
+			return nil, err
+		}
+
+		return status, nil
+
+	}
+
+	return export, nil
 
 }
 

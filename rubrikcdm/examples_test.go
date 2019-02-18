@@ -21,6 +21,26 @@ import (
 	"github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
 )
 
+func ExampleCredentials_ExportEC2Instance() {
+	rubrik, err := rubrikcdm.ConnectEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	instanceID := "i-0268174613c9404dc"
+	exportInstanceName := "Go SDK"
+	instanceType := "m4.large"
+	awsRegion := "us-east-2"
+	subnetID := "subnet-0099d50dd9df9f088"
+	securityGroupID := "sg-082f435771cd7e4d1"
+	waitForCompletion := true
+
+	exportEC2, err := rubrik.ExportEC2Instance(instanceID, exportInstanceName, instanceType, awsRegion, subnetID, securityGroupID, waitForCompletion)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func ExampleCredentials_ClusterVersion() {
 	rubrik, err := rubrikcdm.ConnectEnv()
 	if err != nil {
