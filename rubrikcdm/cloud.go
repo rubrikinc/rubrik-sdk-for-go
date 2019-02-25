@@ -439,7 +439,7 @@ func (c *Credentials) AddAWSNativeAccount(awsAccountName, awsAccessKey, awsSecre
 // r5a.24xlarge, r5d.large, r5d.xlarge, r5d.2xlarge, r5d.4xlarge, r5d.12xlarge, r5d.24xlarge, x1.16xlarge, x1.32xlarge, x1e.xlarge, x1e.2xlarge, x1e.4xlarge, x1e.8xlarge,
 // x1e.16xlarge, x1e.32xlarge, z1d.large, z1d.xlarge, z1d.2xlarge, z1d.3xlarge, z1d.6xlarge, z1d.12xlarge, d2.xlarge, d2.2xlarge, d2.4xlarge, d2.8xlarge, h1.2xlarge,
 // h1.4xlarge,  h1.8xlarge, h1.16xlarge, i3.large, i3.xlarge, i3.2xlarge, i3.4xlarge, i3.8xlarge, i3.16xlarge, f1.2xlarge, f1.4xlarge, f1.16xlarge, g3s.xlarge, g3.4xlarge,
-// g3.8xlarge, g3.16xlarge, p2.xlarge, p2.8xlarge, p2.16xlarge, p3.2xlarge, p3.8xlarge, p3.16xlarge, p3dn.24xlarge,
+// g3.8xlarge, g3.16xlarge, p2.xlarge, p2.8xlarge, p2.16xlarge, p3.2xlarge, p3.8xlarge, p3.16xlarge, and p3dn.24xlarge.
 func (c *Credentials) ExportEC2Instance(instanceID, exportedInstanceName, instanceType, awsRegion, subnetID, securityGroupID string, waitForCompletion bool, timeout ...int) (interface{}, error) {
 
 	minimumClusterVersion := c.ClusterVersionCheck(4.2)
@@ -670,7 +670,7 @@ func (c *Credentials) RemoveAWSAccount(awsAccountName string, deleteExsitingSnap
 
 	httpTimeout := httpTimeout(timeout)
 
-	awsAccountSummary, err := c.AWSAccountSummary(awsAccountName)
+	awsAccountSummary, err := c.AWSAccountSummary(awsAccountName, httpTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -717,7 +717,7 @@ func (c *Credentials) UpdateAWSNativeAccount(archiveName string, config map[stri
 
 	httpTimeout := httpTimeout(timeout)
 
-	awsAccountSummary, err := c.AWSAccountSummary(archiveName)
+	awsAccountSummary, err := c.AWSAccountSummary(archiveName, httpTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -809,7 +809,7 @@ func (c *Credentials) AWSS3CloudOutRSA(awsBucketName, storageClass, archiveName,
 	redactedConfig["accessKey"] = awsAccessKey
 	redactedConfig["objectStoreType"] = "S3"
 
-	archivesOnCluster, err := c.CloudObjectStore()
+	archivesOnCluster, err := c.CloudObjectStore(httpTimeout)
 	if err != nil {
 		return "", err
 	}
@@ -842,7 +842,7 @@ func (c *Credentials) AWSS3CloudOutRSA(awsBucketName, storageClass, archiveName,
 		return "", err
 	}
 
-	status, err := c.JobStatus(fmt.Sprintf("https://%s/api/internal/archive/location/job/connect/%s", c.NodeIP, apiRequest.(map[string]interface{})["jobInstanceId"].(string)))
+	status, err := c.JobStatus(fmt.Sprintf("https://%s/api/internal/archive/location/job/connect/%s", c.NodeIP, apiRequest.(map[string]interface{})["jobInstanceId"].(string)), httpTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -1164,7 +1164,7 @@ func (c *Credentials) AWSS3CloudOutKMS(awsBucketName, storageClass, archiveName,
 		return nil, err
 	}
 
-	status, err := c.JobStatus(fmt.Sprintf("https://%s/api/internal/archive/location/job/connect/%s", c.NodeIP, apiRequest.(map[string]interface{})["jobInstanceId"].(string)))
+	status, err := c.JobStatus(fmt.Sprintf("https://%s/api/internal/archive/location/job/connect/%s", c.NodeIP, apiRequest.(map[string]interface{})["jobInstanceId"].(string)), httpTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -1190,7 +1190,7 @@ func (c *Credentials) AWSS3CloudOn(archiveName, vpcID, subnetID, securityGroupID
 	config["defaultComputeNetworkConfig"].(map[string]string)["subnetId"] = subnetID
 	config["defaultComputeNetworkConfig"].(map[string]string)["securityGroupId"] = securityGroupID
 
-	archivesOnCluster, err := c.CloudObjectStore()
+	archivesOnCluster, err := c.CloudObjectStore(httpTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -1309,7 +1309,7 @@ func (c *Credentials) AzureCloudOut(container, azureAccessKey, storageAccountNam
 		return "", err
 	}
 
-	status, err := c.JobStatus(fmt.Sprintf("https://%s/api/internal/archive/location/job/connect/%s", c.NodeIP, apiRequest.(map[string]interface{})["jobInstanceId"].(string)))
+	status, err := c.JobStatus(fmt.Sprintf("https://%s/api/internal/archive/location/job/connect/%s", c.NodeIP, apiRequest.(map[string]interface{})["jobInstanceId"].(string)), httpTimeout)
 	if err != nil {
 		return nil, err
 	}
