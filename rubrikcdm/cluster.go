@@ -313,7 +313,7 @@ func (c *Credentials) ConfigureTimezone(timezone string, timeout ...int) (*Clust
 		return nil, fmt.Errorf("The 'timezone' must be 'America/Anchorage', 'America/Araguaina', 'America/Barbados', 'America/Chicago', 'America/Denver', 'America/Los_Angeles' 'America/Mexico_City', 'America/New_York', 'America/Noronha', 'America/Phoenix', 'America/Toronto', 'America/Vancouver', 'Asia/Bangkok', 'Asia/Dhaka', 'Asia/Dubai', 'Asia/Hong_Kong', 'Asia/Karachi', 'Asia/Kathmandu', 'Asia/Kolkata', 'Asia/Magadan', 'Asia/Singapore', 'Asia/Tokyo', 'Atlantic/Cape_Verde', 'Australia/Perth', 'Australia/Sydney', 'Europe/Amsterdam', 'Europe/Athens', 'Europe/London', 'Europe/Moscow', 'Pacific/Auckland', 'Pacific/Honolulu', 'Pacific/Midway', or 'UTC'")
 	}
 
-	clusterSummary, err := c.Get("v1", "/cluster/me")
+	clusterSummary, err := c.Get("v1", "/cluster/me", httpTimeout)
 	if err != nil {
 		return nil, err
 	}
