@@ -279,8 +279,9 @@ func ExampleCredentials_ObjectID() {
 	}
 
 	slaName := "Gold"
+	timeout := 15
 
-	slaID, err := rubrik.ObjectID(slaName, "sla")
+	slaID, err := rubrik.ObjectID(slaName, "sla", timeout)
 	if err != nil {
 		log.Fatal(err)
 	}

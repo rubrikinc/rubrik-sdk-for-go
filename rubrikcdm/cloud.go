@@ -611,7 +611,7 @@ func (c *Credentials) ExportEC2Instance(instanceID, exportedInstanceName, instan
 		return "", fmt.Errorf("%s is not a valid AWS Region", awsRegion)
 	}
 
-	instanceID, err := c.ObjectID(instanceID, "ec2")
+	instanceID, err := c.ObjectID(instanceID, "ec2", httpTimeout)
 	if err != nil {
 		return nil, err
 

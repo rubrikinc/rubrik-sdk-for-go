@@ -47,7 +47,7 @@ type EndManagedVolumeSnapshot struct {
 //
 //	vmware, sla, vmwareHost, physicalHost, filesetTemplate, managedVolume, vcenter, and ec2.
 // When the "objectType" is "ec2", the objectName should correspond to the AWS Instance ID.
-func (c *Credentials) ObjectID(objectName, objectType string, hostOS ...string) (string, error) {
+func (c *Credentials) ObjectID(objectName, objectType string, timeout int, hostOS ...string) (string, error) {
 
 	validObjectType := map[string]bool{
 		"vmware":          true,
@@ -106,7 +106,7 @@ func (c *Credentials) ObjectID(objectName, objectType string, hostOS ...string) 
 		objectSummaryAPIEndpoint = fmt.Sprintf("/aws/ec2_instance?name=%s&is_relic=false&sort_by=instanceId&sort_order=asc", objectName)
 	}
 
-	apiRequest, err := c.Get(objectSummaryAPIVersion, objectSummaryAPIEndpoint)
+	apiRequest, err := c.Get(objectSummaryAPIVersion, objectSummaryAPIEndpoint, timeout)
 	if err != nil {
 		return "", err
 	}
@@ -170,7 +170,7 @@ func (c *Credentials) AssignSLA(objectName, objectType, slaName string, timeout 
 	case "clear":
 		slaID = "INHERIT"
 	default:
-		slaID, err = c.ObjectID(slaName, "sla")
+		slaID, err = c.ObjectID(slaName, "sla", httpTimeout)
 		if err != nil {
 			return nil, err
 		}
@@ -179,7 +179,7 @@ func (c *Credentials) AssignSLA(objectName, objectType, slaName string, timeout 
 	config := map[string]interface{}{}
 	switch objectType {
 	case "vmware":
-		vmID, err := c.ObjectID(objectName, "vmware")
+		vmID, err := c.ObjectID(objectName, "vmware", httpTimeout)
 		if err != nil {
 			return nil, err
 		}
@@ -229,7 +229,7 @@ func (c *Credentials) BeginManagedVolumeSnapshot(name string, timeout ...int) (*
 
 	httpTimeout := httpTimeout(timeout)
 
-	managedVolumeID, err := c.ObjectID(name, "managedVolume")
+	managedVolumeID, err := c.ObjectID(name, "managedVolume", httpTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +270,7 @@ func (c *Credentials) EndManagedVolumeSnapshot(name, slaName string, timeout ...
 
 	httpTimeout := httpTimeout(timeout)
 
-	managedVolumeID, err := c.ObjectID(name, "managedVolume")
+	managedVolumeID, err := c.ObjectID(name, "managedVolume", httpTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -289,7 +289,7 @@ func (c *Credentials) EndManagedVolumeSnapshot(name, slaName string, timeout ...
 	switch slaName {
 	case "current":
 	default:
-		slaID, err = c.ObjectID(slaName, "sla")
+		slaID, err = c.ObjectID(slaName, "sla", httpTimeout)
 		if err != nil {
 			return nil, err
 		}
@@ -328,7 +328,7 @@ func (c *Credentials) GetSLAObjects(slaName, objectType string, timeout ...int) 
 
 	switch objectType {
 	case "vmware":
-		slaID, err := c.ObjectID(slaName, "sla")
+		slaID, err := c.ObjectID(slaName, "sla", httpTimeout)
 		if err != nil {
 			return nil, err
 		}
@@ -379,7 +379,7 @@ func (c *Credentials) PauseSnapshot(objectName, objectType string, timeout ...in
 
 	switch objectType {
 	case "vmware":
-		vmID, err := c.ObjectID(objectName, "vmware")
+		vmID, err := c.ObjectID(objectName, "vmware", httpTimeout)
 		if err != nil {
 			return nil, err
 		}
@@ -433,7 +433,7 @@ func (c *Credentials) ResumeSnapshot(objectName, objectType string, timeout ...i
 
 	switch objectType {
 	case "vmware":
-		vmID, err := c.ObjectID(objectName, "vmware")
+		vmID, err := c.ObjectID(objectName, "vmware", httpTimeout)
 		if err != nil {
 			return nil, err
 		}
@@ -486,7 +486,7 @@ func (c *Credentials) OnDemandSnapshotVM(objectName, objectType, slaName string,
 
 	switch objectType {
 	case "vmware":
-		vmID, err := c.ObjectID(objectName, "vmware")
+		vmID, err := c.ObjectID(objectName, "vmware", httpTimeout)
 		if err != nil {
 			return "", err
 		}
@@ -499,7 +499,7 @@ func (c *Credentials) OnDemandSnapshotVM(objectName, objectType, slaName string,
 				return "", err
 			}
 		default:
-			slaID, err = c.ObjectID(slaName, "sla")
+			slaID, err = c.ObjectID(slaName, "sla", httpTimeout)
 			if err != nil {
 				return "", err
 			}
@@ -547,12 +547,12 @@ func (c *Credentials) OnDemandSnapshotPhysical(hostName, slaName, fileset, hostO
 		return "", fmt.Errorf("The 'hostOS' must be 'Linux' or 'Windows")
 	}
 
-	hostID, err := c.ObjectID(hostName, "physicalHost")
+	hostID, err := c.ObjectID(hostName, "physicalHost", httpTimeout)
 	if err != nil {
 		return "", err
 	}
 
-	filesetTemplateID, err := c.ObjectID(fileset, "filesetTemplate", hostOS)
+	filesetTemplateID, err := c.ObjectID(fileset, "filesetTemplate", httpTimeout, hostOS)
 	if err != nil {
 		return "", err
 	}
@@ -573,7 +573,7 @@ func (c *Credentials) OnDemandSnapshotPhysical(hostName, slaName, fileset, hostO
 	case "current":
 		slaID = filesetSummary.(map[string]interface{})["data"].([]interface{})[0].(map[string]interface{})["effectiveSlaDomainId"].(string)
 	default:
-		slaID, err = c.ObjectID(slaName, "sla")
+		slaID, err = c.ObjectID(slaName, "sla", httpTimeout)
 		if err != nil {
 			return "", err
 		}
