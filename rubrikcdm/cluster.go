@@ -152,12 +152,15 @@ func (c *Credentials) ClusterNodeName() ([]string, error) {
 }
 
 // ClusterBootstrapStatus checks whether the cluster has been bootstrapped.
-func (c *Credentials) ClusterBootstrapStatus() (bool, error) {
+func (c *Credentials) ClusterBootstrapStatus(timeout ...int) (bool, error) {
+
+	httpTimeout := httpTimeout(timeout)
+
 	numberOfAttempts := 0
 	for {
 		numberOfAttempts++
 
-		apiRequest, err := c.Get("internal", "/node_management/is_bootstrapped")
+		apiRequest, err := c.Get("internal", "/node_management/is_bootstrapped", httpTimeout)
 		if err != nil {
 
 			// Give the cluster 4 minutes to start responding to API calls before returning an error
@@ -827,7 +830,7 @@ func (c *Credentials) Bootstrap(clusterName, adminEmail, adminPassword, manageme
 		config["nodeConfigs"].(map[string]interface{})[nodeName].(map[string]interface{})["managementIpConfig"].(map[string]string)["address"] = nodeIP
 	}
 
-	currentBootstrapStatus, err := c.ClusterBootstrapStatus()
+	currentBootstrapStatus, err := c.ClusterBootstrapStatus(httpTimeout)
 	if err != nil {
 		return nil, err
 	}
