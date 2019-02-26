@@ -206,7 +206,7 @@ func (c *Credentials) EndUserAuthorization(objectName, endUser, objectType strin
 		return nil, errors.New("The 'objectType' must be 'vmware'")
 	}
 
-	vmID, err := c.ObjectID(objectName, objectType)
+	vmID, err := c.ObjectID(objectName, objectType, httpTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -908,7 +908,7 @@ func (c *Credentials) RefreshvCenter(vCenterIP string, timeout ...int) (interfac
 
 	httpTimeout := httpTimeout(timeout)
 
-	vcenterID, err := c.ObjectID(vCenterIP, "vcenter")
+	vcenterID, err := c.ObjectID(vCenterIP, "vcenter", httpTimeout)
 	if err != nil {
 		return nil, err
 	}
