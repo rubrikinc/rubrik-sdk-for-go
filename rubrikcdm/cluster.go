@@ -84,8 +84,11 @@ type SMTP struct {
 }
 
 // ClusterVersion returns the CDM version of the Rubrik cluster.
-func (c *Credentials) ClusterVersion() (string, error) {
-	apiRequest, err := c.Get("v1", "/cluster/me/version")
+func (c *Credentials) ClusterVersion(timeout ...int) (string, error) {
+
+	httpTimeout := httpTimeout(timeout)
+
+	apiRequest, err := c.Get("v1", "/cluster/me/version", httpTimeout)
 	if err != nil {
 		return "", err
 	}
@@ -103,9 +106,11 @@ func (c *Credentials) ClusterVersion() (string, error) {
 // ClusterVersionCheck is used to determine if the Rubrik cluster is using running an earlier release than the provided CDM "clusterVersion".
 // If the CDM version is an earlier release than the "clusterVersion", the following message error message is thrown:
 // Error: The Rubrik cluster must be running CDM version {clusterVersion} or later.
-func (c *Credentials) ClusterVersionCheck(clusterVersion float64) error {
+func (c *Credentials) ClusterVersionCheck(clusterVersion float64, timeout ...int) error {
 
-	currentClusterVersion, err := c.ClusterVersion()
+	httpTimeout := httpTimeout(timeout)
+
+	currentClusterVersion, err := c.ClusterVersion(httpTimeout)
 	if err != nil {
 		return err
 	}
@@ -120,8 +125,11 @@ func (c *Credentials) ClusterVersionCheck(clusterVersion float64) error {
 }
 
 // ClusterNodeIP returns all Node IPs in the Rubrik cluster.
-func (c *Credentials) ClusterNodeIP() ([]string, error) {
-	apiRequest, err := c.Get("internal", "/cluster/me/node")
+func (c *Credentials) ClusterNodeIP(timeout ...int) ([]string, error) {
+
+	httpTimeout := httpTimeout(timeout)
+
+	apiRequest, err := c.Get("internal", "/cluster/me/node", httpTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -136,8 +144,11 @@ func (c *Credentials) ClusterNodeIP() ([]string, error) {
 }
 
 // ClusterNodeName returns the name of all nodes in the Rubrik cluster.
-func (c *Credentials) ClusterNodeName() ([]string, error) {
-	apiRequest, err := c.Get("internal", "/cluster/me/node")
+func (c *Credentials) ClusterNodeName(timeout ...int) ([]string, error) {
+
+	httpTimeout := httpTimeout(timeout)
+
+	apiRequest, err := c.Get("internal", "/cluster/me/node", httpTimeout)
 	if err != nil {
 		return nil, err
 	}
