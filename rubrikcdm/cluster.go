@@ -84,8 +84,11 @@ type SMTP struct {
 }
 
 // ClusterVersion returns the CDM version of the Rubrik cluster.
-func (c *Credentials) ClusterVersion() (string, error) {
-	apiRequest, err := c.Get("v1", "/cluster/me/version")
+func (c *Credentials) ClusterVersion(timeout ...int) (string, error) {
+
+	httpTimeout := httpTimeout(timeout)
+
+	apiRequest, err := c.Get("v1", "/cluster/me/version", httpTimeout)
 	if err != nil {
 		return "", err
 	}
@@ -103,9 +106,11 @@ func (c *Credentials) ClusterVersion() (string, error) {
 // ClusterVersionCheck is used to determine if the Rubrik cluster is using running an earlier release than the provided CDM "clusterVersion".
 // If the CDM version is an earlier release than the "clusterVersion", the following message error message is thrown:
 // Error: The Rubrik cluster must be running CDM version {clusterVersion} or later.
-func (c *Credentials) ClusterVersionCheck(clusterVersion float64) error {
+func (c *Credentials) ClusterVersionCheck(clusterVersion float64, timeout ...int) error {
 
-	currentClusterVersion, err := c.ClusterVersion()
+	httpTimeout := httpTimeout(timeout)
+
+	currentClusterVersion, err := c.ClusterVersion(httpTimeout)
 	if err != nil {
 		return err
 	}
@@ -120,8 +125,11 @@ func (c *Credentials) ClusterVersionCheck(clusterVersion float64) error {
 }
 
 // ClusterNodeIP returns all Node IPs in the Rubrik cluster.
-func (c *Credentials) ClusterNodeIP() ([]string, error) {
-	apiRequest, err := c.Get("internal", "/cluster/me/node")
+func (c *Credentials) ClusterNodeIP(timeout ...int) ([]string, error) {
+
+	httpTimeout := httpTimeout(timeout)
+
+	apiRequest, err := c.Get("internal", "/cluster/me/node", httpTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -136,8 +144,11 @@ func (c *Credentials) ClusterNodeIP() ([]string, error) {
 }
 
 // ClusterNodeName returns the name of all nodes in the Rubrik cluster.
-func (c *Credentials) ClusterNodeName() ([]string, error) {
-	apiRequest, err := c.Get("internal", "/cluster/me/node")
+func (c *Credentials) ClusterNodeName(timeout ...int) ([]string, error) {
+
+	httpTimeout := httpTimeout(timeout)
+
+	apiRequest, err := c.Get("internal", "/cluster/me/node", httpTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -152,16 +163,19 @@ func (c *Credentials) ClusterNodeName() ([]string, error) {
 }
 
 // ClusterBootstrapStatus checks whether the cluster has been bootstrapped.
-func (c *Credentials) ClusterBootstrapStatus() (bool, error) {
+func (c *Credentials) ClusterBootstrapStatus(timeout ...int) (bool, error) {
+
+	httpTimeout := httpTimeout(timeout)
+
 	numberOfAttempts := 0
 	for {
 		numberOfAttempts++
 
-		apiRequest, err := c.Get("internal", "/node_management/is_bootstrapped")
+		apiRequest, err := c.Get("internal", "/node_management/is_bootstrapped", httpTimeout)
 		if err != nil {
 
 			// Give the cluster 4 minutes to start responding to API calls before returning an error
-			if strings.Contains(err.Error(), "connection refused") {
+			if strings.Contains(err.Error(), "tcp") {
 				if numberOfAttempts == 24 {
 					return false, err
 				}
@@ -187,7 +201,7 @@ func (c *Credentials) ClusterBootstrapStatus() (bool, error) {
 
 }
 
-// EndUserAuthorization assigns an End User account privileges for a VMware virtual machine. vmware is currently the only
+// EndUserAuthorization assigns an End User account privileges for a VMware virtual machine. VMware is currently the only
 // supported "objectType"
 //
 // The function will return one of the following:
@@ -199,14 +213,14 @@ func (c *Credentials) EndUserAuthorization(objectName, endUser, objectType strin
 	httpTimeout := httpTimeout(timeout)
 
 	validObjectType := map[string]bool{
-		"vmware": true,
+		"VMware": true,
 	}
 
 	if validObjectType[objectType] == false {
-		return nil, errors.New("The 'objectType' must be 'vmware'")
+		return nil, errors.New("The 'objectType' must be 'VMware'")
 	}
 
-	vmID, err := c.ObjectID(objectName, objectType)
+	vmID, err := c.ObjectID(objectName, objectType, httpTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -313,13 +327,13 @@ func (c *Credentials) ConfigureTimezone(timezone string, timeout ...int) (*Clust
 		return nil, fmt.Errorf("The 'timezone' must be 'America/Anchorage', 'America/Araguaina', 'America/Barbados', 'America/Chicago', 'America/Denver', 'America/Los_Angeles' 'America/Mexico_City', 'America/New_York', 'America/Noronha', 'America/Phoenix', 'America/Toronto', 'America/Vancouver', 'Asia/Bangkok', 'Asia/Dhaka', 'Asia/Dubai', 'Asia/Hong_Kong', 'Asia/Karachi', 'Asia/Kathmandu', 'Asia/Kolkata', 'Asia/Magadan', 'Asia/Singapore', 'Asia/Tokyo', 'Atlantic/Cape_Verde', 'Australia/Perth', 'Australia/Sydney', 'Europe/Amsterdam', 'Europe/Athens', 'Europe/London', 'Europe/Moscow', 'Pacific/Auckland', 'Pacific/Honolulu', 'Pacific/Midway', or 'UTC'")
 	}
 
-	clusterSummary, err := c.Get("v1", "/cluster/me")
+	clusterSummary, err := c.Get("v1", "/cluster/me", httpTimeout)
 	if err != nil {
 		return nil, err
 	}
 
 	if clusterSummary.(map[string]interface{})["timezone"].(map[string]interface{})["timezone"] == timezone {
-		return nil, fmt.Errorf("No change required. The Rubrik cluster is already configured with '%s' as it's timezone.", timezone)
+		return nil, fmt.Errorf("No change required. The Rubrik cluster is already configured with '%s' as it's timezone", timezone)
 	}
 
 	config := map[string]interface{}{}
@@ -682,12 +696,12 @@ func (c *Credentials) ConfigureVLAN(netmask string, vlan int, ips map[string]str
 // The function will return one of the following:
 //	No change required. The vCenter '{vcenterIP}' has already been added to the Rubrik cluster.
 //
-//	The full API response for POST /v1/vmware/vcenter
+//	The full API response for POST /v1/VMware/vcenter
 func (c *Credentials) AddvCenter(vCenterIP, vCenterUsername, vCenterPassword string, vmLinking bool, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
-	currentVCenter, err := c.Get("v1", "/vmware/vcenter?primary_cluster_id=local", httpTimeout)
+	currentVCenter, err := c.Get("v1", "/VMware/vcenter?primary_cluster_id=local", httpTimeout)
 	if err != nil {
 		return "", err
 	}
@@ -709,7 +723,7 @@ func (c *Credentials) AddvCenter(vCenterIP, vCenterUsername, vCenterPassword str
 		config["conflictResolutionAuthz"] = "NoConflictResolution"
 	}
 
-	apiRequest, err := c.Post("v1", "/vmware/vcenter", config, httpTimeout)
+	apiRequest, err := c.Post("v1", "/VMware/vcenter", config, httpTimeout)
 	if err != nil {
 		return "", err
 	}
@@ -735,12 +749,12 @@ func (c *Credentials) AddvCenter(vCenterIP, vCenterUsername, vCenterPassword str
 // The function will return one of the following:
 //	No change required. The vCenter '{vcenterIP}' has already been added to the Rubrik cluster.
 //
-//	The full API response for POST /v1/vmware/vcenter
+//	The full API response for POST /v1/VMware/vcenter
 func (c *Credentials) AddvCenterWithCert(vCenterIP, vCenterUsername, vCenterPassword, caCertificate string, vmLinking bool, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
-	currentVCenter, err := c.Get("v1", "/vmware/vcenter?primary_cluster_id=local", httpTimeout)
+	currentVCenter, err := c.Get("v1", "/VMware/vcenter?primary_cluster_id=local", httpTimeout)
 	if err != nil {
 		return "", err
 	}
@@ -763,7 +777,7 @@ func (c *Credentials) AddvCenterWithCert(vCenterIP, vCenterUsername, vCenterPass
 	}
 	config["caCerts"] = caCertificate
 
-	apiRequest, err := c.Post("v1", "/vmware/vcenter", config, httpTimeout)
+	apiRequest, err := c.Post("v1", "/VMware/vcenter", config, httpTimeout)
 	if err != nil {
 		return "", err
 	}
@@ -827,7 +841,7 @@ func (c *Credentials) Bootstrap(clusterName, adminEmail, adminPassword, manageme
 		config["nodeConfigs"].(map[string]interface{})[nodeName].(map[string]interface{})["managementIpConfig"].(map[string]string)["address"] = nodeIP
 	}
 
-	currentBootstrapStatus, err := c.ClusterBootstrapStatus()
+	currentBootstrapStatus, err := c.ClusterBootstrapStatus(httpTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -868,4 +882,68 @@ func (c *Credentials) Bootstrap(clusterName, adminEmail, adminPassword, manageme
 	}
 
 	return bootstrap, nil
+}
+
+// RegisterCluster submits the registration details for the specified Rubrik cluster. The username and password should
+// correspond to your Rubrik Support Portal account. The default timeout value is 160 seconds.
+func (c *Credentials) RegisterCluster(username, password string, timeout ...int) (interface{}, error) {
+
+	httpTimeout := httpTimeout(timeout)
+
+	// Change the default to 160
+	if httpTimeout == 15 {
+		httpTimeout = 160
+	}
+
+	isRegistered, err := c.Get("internal", "/cluster/me/is_registered")
+	if err != nil {
+		return nil, err
+	}
+
+	if isRegistered.(map[string]interface{})["value"] == true {
+		return "No change required. The cluster is already registered.", nil
+	}
+
+	config := map[string]interface{}{}
+	config["username"] = username
+	config["password"] = password
+
+	register, err := c.Post("internal", "/cluster/me/register", config, httpTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	return register, nil
+
+}
+
+// RefreshvCenter updates the the metadata for the specified vCenter Server and waits for the job to complete before returning the JobStatus API response.
+func (c *Credentials) RefreshvCenter(vCenterIP string, timeout ...int) (interface{}, error) {
+
+	httpTimeout := httpTimeout(timeout)
+
+	vcenterID, err := c.ObjectID(vCenterIP, "vcenter", httpTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	refresh, err := c.Post("v1", fmt.Sprintf("/VMware/vcenter/%s/refresh", vcenterID), httpTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert the API Response (map[string]interface{}) to a struct
+	var refreshJob JobStatus
+	mapErr := mapstructure.Decode(refresh, &refreshJob)
+	if mapErr != nil {
+		return nil, mapErr
+	}
+
+	status, err := c.JobStatus(refreshJob.Links[0].Href)
+	if err != nil {
+		return nil, err
+	}
+
+	return status, nil
+
 }
