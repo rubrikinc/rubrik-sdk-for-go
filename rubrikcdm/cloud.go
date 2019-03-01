@@ -328,12 +328,12 @@ type CloudOn struct {
 //	The full API response for POST /internal/aws/account.
 func (c *Credentials) AddAWSNativeAccount(awsAccountName, awsAccessKey, awsSecretKey string, awsRegions []string, regionalBoltNetworkConfigs interface{}, timeout ...int) (interface{}, error) {
 
-	minimumClusterVersion := c.ClusterVersionCheck(4.2)
+	httpTimeout := httpTimeout(timeout)
+
+	minimumClusterVersion := c.ClusterVersionCheck(4.2, httpTimeout)
 	if minimumClusterVersion != nil {
 		return nil, minimumClusterVersion
 	}
-
-	httpTimeout := httpTimeout(timeout)
 
 	validAWSRegions := map[string]bool{
 		"ap-south-1":     true,
