@@ -201,7 +201,7 @@ func (c *Credentials) ClusterBootstrapStatus(timeout ...int) (bool, error) {
 
 }
 
-// EndUserAuthorization assigns an End User account privileges for a VMware virtual machine. vmware is currently the only
+// EndUserAuthorization assigns an End User account privileges for a VMware virtual machine. VMware is currently the only
 // supported "objectType"
 //
 // The function will return one of the following:
@@ -213,11 +213,11 @@ func (c *Credentials) EndUserAuthorization(objectName, endUser, objectType strin
 	httpTimeout := httpTimeout(timeout)
 
 	validObjectType := map[string]bool{
-		"vmware": true,
+		"VMware": true,
 	}
 
 	if validObjectType[objectType] == false {
-		return nil, errors.New("The 'objectType' must be 'vmware'")
+		return nil, errors.New("The 'objectType' must be 'VMware'")
 	}
 
 	vmID, err := c.ObjectID(objectName, objectType, httpTimeout)
@@ -696,12 +696,12 @@ func (c *Credentials) ConfigureVLAN(netmask string, vlan int, ips map[string]str
 // The function will return one of the following:
 //	No change required. The vCenter '{vcenterIP}' has already been added to the Rubrik cluster.
 //
-//	The full API response for POST /v1/vmware/vcenter
+//	The full API response for POST /v1/VMware/vcenter
 func (c *Credentials) AddvCenter(vCenterIP, vCenterUsername, vCenterPassword string, vmLinking bool, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
-	currentVCenter, err := c.Get("v1", "/vmware/vcenter?primary_cluster_id=local", httpTimeout)
+	currentVCenter, err := c.Get("v1", "/VMware/vcenter?primary_cluster_id=local", httpTimeout)
 	if err != nil {
 		return "", err
 	}
@@ -723,7 +723,7 @@ func (c *Credentials) AddvCenter(vCenterIP, vCenterUsername, vCenterPassword str
 		config["conflictResolutionAuthz"] = "NoConflictResolution"
 	}
 
-	apiRequest, err := c.Post("v1", "/vmware/vcenter", config, httpTimeout)
+	apiRequest, err := c.Post("v1", "/VMware/vcenter", config, httpTimeout)
 	if err != nil {
 		return "", err
 	}
@@ -749,12 +749,12 @@ func (c *Credentials) AddvCenter(vCenterIP, vCenterUsername, vCenterPassword str
 // The function will return one of the following:
 //	No change required. The vCenter '{vcenterIP}' has already been added to the Rubrik cluster.
 //
-//	The full API response for POST /v1/vmware/vcenter
+//	The full API response for POST /v1/VMware/vcenter
 func (c *Credentials) AddvCenterWithCert(vCenterIP, vCenterUsername, vCenterPassword, caCertificate string, vmLinking bool, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
-	currentVCenter, err := c.Get("v1", "/vmware/vcenter?primary_cluster_id=local", httpTimeout)
+	currentVCenter, err := c.Get("v1", "/VMware/vcenter?primary_cluster_id=local", httpTimeout)
 	if err != nil {
 		return "", err
 	}
@@ -777,7 +777,7 @@ func (c *Credentials) AddvCenterWithCert(vCenterIP, vCenterUsername, vCenterPass
 	}
 	config["caCerts"] = caCertificate
 
-	apiRequest, err := c.Post("v1", "/vmware/vcenter", config, httpTimeout)
+	apiRequest, err := c.Post("v1", "/VMware/vcenter", config, httpTimeout)
 	if err != nil {
 		return "", err
 	}
@@ -885,14 +885,14 @@ func (c *Credentials) Bootstrap(clusterName, adminEmail, adminPassword, manageme
 }
 
 // RegisterCluster submits the registration details for the specified Rubrik cluster. The username and password should
-// correspond to your Rubrik Support Portal account.
+// correspond to your Rubrik Support Portal account. The default timeout value is 160 seconds.
 func (c *Credentials) RegisterCluster(username, password string, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
 	// Change the default to 160
 	if httpTimeout == 15 {
-		httpTimeout = 60
+		httpTimeout = 160
 	}
 
 	isRegistered, err := c.Get("internal", "/cluster/me/is_registered")
@@ -927,7 +927,7 @@ func (c *Credentials) RefreshvCenter(vCenterIP string, timeout ...int) (interfac
 		return nil, err
 	}
 
-	refresh, err := c.Post("v1", fmt.Sprintf("/vmware/vcenter/%s/refresh", vcenterID), httpTimeout)
+	refresh, err := c.Post("v1", fmt.Sprintf("/VMware/vcenter/%s/refresh", vcenterID), httpTimeout)
 	if err != nil {
 		return nil, err
 	}
