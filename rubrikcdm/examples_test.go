@@ -75,7 +75,7 @@ func ExampleCredentials_PauseSnapshot() {
 
 	vmName := "vm01"
 
-	pauseVM, err := rubrik.PauseSnapshot(vmName, "vmware")
+	pauseVM, err := rubrik.PauseSnapshot(vmName, "VMware")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -90,7 +90,7 @@ func ExampleCredentials_OnDemandSnapshotVM() {
 	vmName := "ansible-node01"
 	sla := "current"
 
-	vmSnapshot, err := rubrik.OnDemandSnapshotVM(vmName, "vmware", sla)
+	vmSnapshot, err := rubrik.OnDemandSnapshotVM(vmName, "VMware", sla)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -121,7 +121,7 @@ func ExampleCredentials_ResumeSnapshot() {
 
 	vmName := "vm01"
 
-	resumeVM, err := rubrik.ResumeSnapshot(vmName, "vmware")
+	resumeVM, err := rubrik.ResumeSnapshot(vmName, "VMware")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -135,7 +135,7 @@ func ExampleCredentials_GetSLAObjects() {
 
 	slaName := "Gold"
 
-	getObjSLA, err := rubrik.GetSLAObjects(slaName, "vmware")
+	getObjSLA, err := rubrik.GetSLAObjects(slaName, "VMware")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -166,7 +166,7 @@ func ExampleCredentials_AssignSLA() {
 	objectName := "vm01"
 	slaName := "Bronze"
 
-	assignSLA, err := rubrik.AssignSLA(objectName, "vmware", slaName)
+	assignSLA, err := rubrik.AssignSLA(objectName, "VMware", slaName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -393,7 +393,7 @@ func ExampleCredentials_EndUserAuthorization() {
 	vmName := "vm01"
 	endUser := "user01"
 
-	endUserAuth, err := rubrik.EndUserAuthorization(vmName, endUser, "vmware")
+	endUserAuth, err := rubrik.EndUserAuthorization(vmName, endUser, "VMware")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -432,7 +432,7 @@ func ExampleCredentials_Post() {
 	config := map[string]string{}
 	config["slaId"] = "388a473c-3361-42ab-8f5b-08edb76891f6"
 
-	onDemandSnapshot, err := rubrik.Post("v1", "/vmware/vm/VirtualMachine:::fbcb1f51-9520-4227-a68c-6fe145982f48-vm-204969/snapshot", config)
+	onDemandSnapshot, err := rubrik.Post("v1", "/VMware/vm/VirtualMachine:::fbcb1f51-9520-4227-a68c-6fe145982f48-vm-204969/snapshot", config)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -495,7 +495,7 @@ func ExampleCredentials_RefreshvCenter() {
 		log.Fatal(err)
 	}
 
-	vcenter_hostname := "python.demo.lab"
+	vcenter_hostname := "go.demo.lab"
 
 	refresh, err := rubrik.RefreshvCenter(vcenter_hostname)
 	if err != nil {
