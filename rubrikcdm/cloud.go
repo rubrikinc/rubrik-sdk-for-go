@@ -412,7 +412,7 @@ func (c *Credentials) AddAWSNativeAccount(awsAccountName, awsAccessKey, awsSecre
 		return nil, mapErr
 	}
 
-	status, err := c.JobStatus(addAccount.Links[0].Href)
+	status, err := c.JobStatus(addAccount.Links[0].Href, httpTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -442,12 +442,12 @@ func (c *Credentials) AddAWSNativeAccount(awsAccountName, awsAccessKey, awsSecre
 // g3.8xlarge, g3.16xlarge, p2.xlarge, p2.8xlarge, p2.16xlarge, p3.2xlarge, p3.8xlarge, p3.16xlarge, and p3dn.24xlarge.
 func (c *Credentials) ExportEC2Instance(instanceID, exportedInstanceName, instanceType, awsRegion, subnetID, securityGroupID string, waitForCompletion bool, timeout ...int) (interface{}, error) {
 
-	minimumClusterVersion := c.ClusterVersionCheck(4.2)
+	httpTimeout := httpTimeout(timeout)
+
+	minimumClusterVersion := c.ClusterVersionCheck(4.2, httpTimeout)
 	if minimumClusterVersion != nil {
 		return nil, minimumClusterVersion
 	}
-
-	httpTimeout := httpTimeout(timeout)
 
 	validAWSRegions := map[string]bool{
 		"ap-south-1":     true,
@@ -652,7 +652,7 @@ func (c *Credentials) ExportEC2Instance(instanceID, exportedInstanceName, instan
 
 	if waitForCompletion == true {
 
-		status, err := c.JobStatus(export.Links[0].Href)
+		status, err := c.JobStatus(export.Links[0].Href, httpTimeout)
 		if err != nil {
 			return nil, err
 		}
