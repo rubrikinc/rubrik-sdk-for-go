@@ -21,6 +21,26 @@ import (
 	"github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
 )
 
+func ExampleCredentials_ExportEC2Instance() {
+	rubrik, err := rubrikcdm.ConnectEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	instanceID := "i-0268174613c9404dc"
+	exportInstanceName := "Go SDK"
+	instanceType := "m4.large"
+	awsRegion := "us-east-2"
+	subnetID := "subnet-0099d50dd9df9f088"
+	securityGroupID := "sg-082f435771cd7e4d1"
+	waitForCompletion := true
+
+	exportEC2, err := rubrik.ExportEC2Instance(instanceID, exportInstanceName, instanceType, awsRegion, subnetID, securityGroupID, waitForCompletion)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func ExampleCredentials_ClusterVersion() {
 	rubrik, err := rubrikcdm.ConnectEnv()
 	if err != nil {
@@ -55,7 +75,7 @@ func ExampleCredentials_PauseSnapshot() {
 
 	vmName := "vm01"
 
-	pauseVM, err := rubrik.PauseSnapshot(vmName, "vmware")
+	pauseVM, err := rubrik.PauseSnapshot(vmName, "VMware")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -70,7 +90,7 @@ func ExampleCredentials_OnDemandSnapshotVM() {
 	vmName := "ansible-node01"
 	sla := "current"
 
-	vmSnapshot, err := rubrik.OnDemandSnapshotVM(vmName, "vmware", sla)
+	vmSnapshot, err := rubrik.OnDemandSnapshotVM(vmName, "VMware", sla)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -101,7 +121,7 @@ func ExampleCredentials_ResumeSnapshot() {
 
 	vmName := "vm01"
 
-	resumeVM, err := rubrik.ResumeSnapshot(vmName, "vmware")
+	resumeVM, err := rubrik.ResumeSnapshot(vmName, "VMware")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -115,7 +135,7 @@ func ExampleCredentials_GetSLAObjects() {
 
 	slaName := "Gold"
 
-	getObjSLA, err := rubrik.GetSLAObjects(slaName, "vmware")
+	getObjSLA, err := rubrik.GetSLAObjects(slaName, "VMware")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -146,7 +166,7 @@ func ExampleCredentials_AssignSLA() {
 	objectName := "vm01"
 	slaName := "Bronze"
 
-	assignSLA, err := rubrik.AssignSLA(objectName, "vmware", slaName)
+	assignSLA, err := rubrik.AssignSLA(objectName, "VMware", slaName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -259,8 +279,9 @@ func ExampleCredentials_ObjectID() {
 	}
 
 	slaName := "Gold"
+	timeout := 15
 
-	slaID, err := c.ObjectID(slaName, "sla")
+	slaID, err := rubrik.ObjectID(slaName, "sla", timeout)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -288,7 +309,7 @@ func ExampleCredentials_Bootstrap() {
 	nodeConfig["RVM157S018903"] = "10.77.16.198"
 	nodeConfig["RVM157S018904"] = "10.77.16.81"
 
-	bootstrap, error := rubrik.Bootstrap(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask, dnsSearchDomain, dnsNameServers, ntpServers, nodeConfig, enableEncryption, waitForCompletion)
+	bootstrap, err := rubrik.Bootstrap(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask, dnsSearchDomain, dnsNameServers, ntpServers, nodeConfig, enableEncryption, waitForCompletion)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -317,6 +338,21 @@ func ExampleCredentials_ConfigureSyslog() {
 	syslogPort := 514
 
 	syslog, err := rubrik.ConfigureSyslog(syslogIP, syslogProtocol, syslogPort)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func ExampleCredentials_RegisterCluster() {
+	rubrik, err := rubrikcdm.ConnectEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	support_portal_username := "gosdk@rubrik.com"
+	support_portal_password := "GoDummyPassword"
+
+	register, err := rubrik.RegisterCluster(support_portal_username, support_portal_password)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -357,7 +393,7 @@ func ExampleCredentials_EndUserAuthorization() {
 	vmName := "vm01"
 	endUser := "user01"
 
-	endUserAuth, err := rubrik.EndUserAuthorization(vmName, endUser, "vmware")
+	endUserAuth, err := rubrik.EndUserAuthorization(vmName, endUser, "VMware")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -369,8 +405,8 @@ func ExampleCredentials_ClusterVersionCheck() {
 		log.Fatal(err)
 	}
 
-	clusterVersion, err := rubrik.ClusterVersionCheck(4.2)
-	if err != nil {
+	clusterVersion := rubrik.ClusterVersionCheck(4.2)
+	if clusterVersion != nil {
 		log.Fatal(err)
 	}
 }
@@ -396,7 +432,7 @@ func ExampleCredentials_Post() {
 	config := map[string]string{}
 	config["slaId"] = "388a473c-3361-42ab-8f5b-08edb76891f6"
 
-	onDemandSnapshot, err := rubrik.Post("v1", "/vmware/vm/VirtualMachine:::fbcb1f51-9520-4227-a68c-6fe145982f48-vm-204969/snapshot", config)
+	onDemandSnapshot, err := rubrik.Post("v1", "/VMware/vm/VirtualMachine:::fbcb1f51-9520-4227-a68c-6fe145982f48-vm-204969/snapshot", config)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -450,6 +486,21 @@ func ExampleCredentials_AddAWSNativeAccount() {
 	addAWSNative, err := rubrik.AddAWSNativeAccount(awsAccountName, awsAccessKey, awsSecretKey, awsRegions, boltConfig)
 	if err != nil {
 		log.Fatal(err)
+	}
+}
+
+func ExampleCredentials_RefreshvCenter() {
+	rubrik, err := rubrikcdm.ConnectEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	vcenter_hostname := "go.demo.lab"
+
+	refresh, err := rubrik.RefreshvCenter(vcenter_hostname)
+	if err != nil {
+		log.Fatal(err)
+
 	}
 }
 
