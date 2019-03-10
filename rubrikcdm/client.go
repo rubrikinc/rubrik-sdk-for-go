@@ -200,13 +200,16 @@ func apiVersionValidation(apiVersion string) bool {
 	return false
 }
 
-// endpointValidation validates that the endpoint provided in the Base API functions starts with a / but does not end with one.
+// endpointValidation validates that the endpoint provided in the Base API functions starts with a / but does not end with one except if preceded by a =
 func endpointValidation(apiEndpoint string) string {
 
 	if string(apiEndpoint[0]) != "/" {
 		return "errorStart"
 	} else if string(apiEndpoint[len(apiEndpoint)-1]) == "/" {
-		return "errorEnd"
+
+		if string(apiEndpoint[len(apiEndpoint)-2]) != "=" { // accounting for exeption =/
+			return "errorEnd"
+		}
 	}
 	return "success"
 }
