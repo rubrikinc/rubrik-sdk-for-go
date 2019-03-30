@@ -746,7 +746,7 @@ func (c *Credentials) UpdateAWSNativeAccount(archiveName string, config map[stri
 //
 // Valid "storageClass" choices are:
 //
-//	ap-standard-1, standard_ia, and reduced_redundancy
+//	standard, standard_ia, and reduced_redundancy
 //
 // The function will return one of the following:
 //	- No change required. The '{archiveName}' archive location is already configured on the Rubrik cluster.
@@ -1073,7 +1073,7 @@ func (c *Credentials) UpdateCloudArchiveLocation(archiveName string, config map[
 //
 // Valid "storageClass" choices are:
 //
-//	ap-standard-1, standard_ia, and reduced_redundancy
+//	standard, standard_ia, and reduced_redundancy
 //
 // The function will return one of the following:
 //	- No change required. The '{archiveName}' archive location is already configured on the Rubrik cluster.
@@ -1299,7 +1299,7 @@ func (c *Credentials) AzureCloudOut(container, azureAccessKey, storageAccountNam
 		}
 
 		if archiveDefinition.(map[string]interface{})["objectStoreType"] == "Azure" && archiveDefinition.(map[string]interface{})["name"] == archiveName {
-			return nil, fmt.Errorf("An arhive location with the name '%s' already exists. Please enter a unique 'archiveName'", archiveName)
+			return nil, fmt.Errorf("An archive location with the name '%s' already exists. Please enter a unique 'archiveName'", archiveName)
 		}
 
 	}
