@@ -43,7 +43,7 @@ export rubrik_cdm_username=user@domain.com
 export rubrik_cdm_password=SecretPassword
 ```
 
-Run export without any other parameters to view current environment variables. In order for the environment variables to persist across terminal sessions, add the above three export commands to the `~\.bash_profile` or `~\.profile` file.
+Run export without any other parameters to view current environment variables. In order for the environment variables to persist across terminal sessions, add the above three export commands to the `~\.bash_profile` or `~\.profile` file and then run `source ~\.bash_profile` or `source ~\.profile` to ensure the environment variables are present in your current terminal session.
 
 Once set, the `rubrikcdm.ConnectEnv()` function will automatically utilize the data within the environment variables to perform its connection.
 
@@ -84,7 +84,7 @@ import "fmt"
 import "github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
 
 rubrik := rubrikcdm.ConnectEnv()
-fmt.Println(rubrik.GetSLAObjects("Gold","vmware"))
+fmt.Println(rubrik.GetSLAObjects("Gold","VMware"))
 ```
 
 For a full list of functions, methods, and their associated arguments see the official [Rubrik SDK for Go documentation](https://godoc.org/github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm).
@@ -142,7 +142,7 @@ func main() {
 
 	// Set Function Variables
 	objectName := "vm01"
-	objectType := "vmware"
+	objectType := "VMware"
 	slaName := "Gold"
 
 	// Assign VM to SLA Domain
@@ -159,7 +159,7 @@ func main() {
 
 	// Set Function Variables
 	vmName := "vm02"
-	objectType = "vmware"
+	objectType = "VMware"
 	slaName = "current"
 
 	// Take On-Demand Snapshot of VM
@@ -175,7 +175,7 @@ func main() {
 	  ===========================================================*/
 
 	vmName = "vm03"
-	objectType = "vmware"
+	objectType = "VMware"
 
 	// Get VM Object ID
 	vmID, err := rubrik.ObjectID(vmName, objectType)
@@ -186,7 +186,7 @@ func main() {
 	}
 
 	// Create the API endpoint address based on VM ID
-	apiPath := fmt.Sprintf("/vmware/vm/%s", vmID)
+	apiPath := fmt.Sprintf("/VMware/vm/%s", vmID)
 
 	// Send the GET request via API and save the response
 	vmInfo, err := rubrik.Get("v1", apiPath)
@@ -214,9 +214,9 @@ func main() {
 
 After importing the needed modules and connecting to the Rubrik cluster, the main examples start on Line 8.
 
-**Lines 20 through 35** show an example of associating an existing SLA Domain with a VMware VM. The `AssignSLA()` function is utilized to accomplish this, taking in three arguments; the VM name, Object Type (vmware), and SLA Domain name.
+**Lines 20 through 35** show an example of associating an existing SLA Domain with a VMware VM. The `AssignSLA()` function is utilized to accomplish this, taking in three arguments; the VM name, Object Type (VMware), and SLA Domain name.
 
-**Lines 37 through 52** illustrates performing an on-demand snapshot of a VMware VM. The `OnDemandSnapshotVM()` function is utilized to accomplish this, taking in three arguments; the VM name, object type (vmware), and SLA Domain name to apply to the snapshot.
+**Lines 37 through 52** illustrates performing an on-demand snapshot of a VMware VM. The `OnDemandSnapshotVM()` function is utilized to accomplish this, taking in three arguments; the VM name, object type (VMware), and SLA Domain name to apply to the snapshot.
 
 **Lines 54 through 90** obtains the ID of a VM protected by Rubrik, and uses the `Get()` function to gather details about the VM. A for loop is used to iterate through the API response and display details about the VM to the user.
 
@@ -266,7 +266,7 @@ func main() {
 
 	vmName := "vm01"
 	slaName := "Gold"
-	apiPath1 := "/vmware/vm?name=" + vmName
+	apiPath1 := "/VMware/vm?name=" + vmName
 	apiPath2 := "/sla_domain?name=" + slaName
 
 	// Perform a GET to obtain the VM ID
@@ -293,7 +293,7 @@ func main() {
 	config["configuredSlaDomainId"] = slaID.(string)
 
 	// Perform a PATCH to set the VM SLA policy
-	rubrik.Patch("v1", "/vmware/vm/"+vmID.(string), config)
+	rubrik.Patch("v1", "/VMware/vm/"+vmID.(string), config)
 }
 ```
 
