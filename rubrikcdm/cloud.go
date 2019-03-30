@@ -1299,7 +1299,7 @@ func (c *Credentials) AzureCloudOut(container, azureAccessKey, storageAccountNam
 		}
 
 		if archiveDefinition.(map[string]interface{})["objectStoreType"] == "Azure" && archiveDefinition.(map[string]interface{})["name"] == archiveName {
-			return nil, fmt.Errorf("An arhive location with the name '%s' already exists. Please enter a unique 'archiveName'", archiveName)
+			return nil, fmt.Errorf("An archive location with the name '%s' already exists. Please enter a unique 'archiveName'", archiveName)
 		}
 
 	}
