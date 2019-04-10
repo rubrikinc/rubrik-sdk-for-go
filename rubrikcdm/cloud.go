@@ -614,13 +614,13 @@ func (c *Credentials) ExportEC2Instance(instanceID, exportedInstanceName, instan
 		return "", fmt.Errorf("%s is not a valid AWS Region", awsRegion)
 	}
 
-	instanceID, err := c.ObjectID(instanceID, "ec2", httpTimeout)
+	objectID, err := c.ObjectID(instanceID, "ec2", httpTimeout)
 	if err != nil {
 		return nil, err
 
 	}
 
-	allSnapshots, err := c.Get("internal", fmt.Sprintf("/aws/ec2_instance/%s/snapshot", instanceID), httpTimeout)
+	allSnapshots, err := c.Get("internal", fmt.Sprintf("/aws/ec2_instance/%s/snapshot", objectID), httpTimeout)
 	if err != nil {
 		return nil, err
 	}
