@@ -15,6 +15,7 @@ package rubrikcdm
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/mitchellh/mapstructure"
 )
@@ -39,6 +40,22 @@ type EndManagedVolumeSnapshot struct {
 			Rel  string `json:"rel"`
 		} `json:"self"`
 	} `json:"links"`
+}
+
+// Cluster corresponds to /v1/cluster/{id}
+type Cluster struct {
+	ID         string `json:"id"`
+	Version    string `json:"version"`
+	APIVersion string `json:"apiVersion"`
+	Name       string `json:"name"`
+	Timezone   struct {
+		Timezone string `json:"timezone"`
+	} `json:"timezone"`
+	Geolocation struct {
+		Address string `json:"address"`
+	} `json:"geolocation"`
+	AcceptedEulaVersion string `json:"acceptedEulaVersion"`
+	LatestEulaVersion   string `json:"latestEulaVersion"`
 }
 
 // ObjectID will search the Rubrik cluster for the provided "objectName" and return its ID/
@@ -589,4 +606,32 @@ func (c *Credentials) OnDemandSnapshotPhysical(hostName, slaName, fileset, hostO
 	}
 
 	return apiRequeset.(map[string]interface{})["links"].([]interface{})[0].(map[string]interface{})["href"].(string), nil
+}
+
+func (c *Credentials) DateTimeConversion(dateTime string, timeout ...int) (string, error) {
+
+	httpTimeout := httpTimeout(timeout)
+
+	apiRequest, err := c.Get("v1", "/cluster/me", httpTimeout)
+	if err != nil {
+		return "", err
+	}
+
+	// Convert the API Response (map[string]interface{}) to a struct
+	var cluster Cluster
+	mapErr := mapstructure.Decode(apiRequest, &cluster)
+	if mapErr != nil {
+		return "", mapErr
+	}
+
+	currentTimezone, _ := time.LoadLocation(cluster.Timezone.Timezone)
+	// Month-Day-Year
+
+	snapshotDateTime, err := time.ParseInLocation("01-02-2006 3:04 PM", dateTime, currentTimezone)
+	if err != nil {
+		return "", fmt.Errorf("The provided 'dateTime' does not match the required format (Month-Day-Year Hour:Minute AM/PM). Ex. 01-02-2006 3:04 PM")
+	}
+
+	return snapshotDateTime.UTC().Format(time.RFC3339), nil
+
 }

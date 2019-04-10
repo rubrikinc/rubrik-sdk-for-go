@@ -33,9 +33,10 @@ func ExampleCredentials_ExportEC2Instance() {
 	awsRegion := "us-east-2"
 	subnetID := "subnet-0099d50dd9df9f088"
 	securityGroupID := "sg-082f435771cd7e4d1"
+	dateTime := "04-09-2019 05:56 PM"
 	waitForCompletion := true
 
-	exportEC2, err := rubrik.ExportEC2Instance(instanceID, exportInstanceName, instanceType, awsRegion, subnetID, securityGroupID, waitForCompletion)
+	exportEC2, err := rubrik.ExportEC2Instance(instanceID, exportInstanceName, instanceType, awsRegion, subnetID, securityGroupID, dateTime, waitForCompletion)
 	if err != nil {
 		log.Fatal(err)
 	}
