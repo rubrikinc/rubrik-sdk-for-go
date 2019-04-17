@@ -1,5 +1,10 @@
 # Rubrik SDK for Go
 
+[![GoDoc](https://godoc.org/github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm?status.svg)](https://godoc.org/github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm)
+
+
+
+
 <p></p>
 <p align="center">
   <img src="https://user-images.githubusercontent.com/8610203/48332236-55506f00-e610-11e8-9a60-594de963a1ee.png" alt="Rubrik Gopher Logo"/>
