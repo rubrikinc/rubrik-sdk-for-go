@@ -15,6 +15,7 @@ package rubrikcdm
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/mitchellh/mapstructure"
 )
@@ -41,6 +42,22 @@ type EndManagedVolumeSnapshot struct {
 	} `json:"links"`
 }
 
+// Cluster corresponds to /v1/cluster/{id}
+type Cluster struct {
+	ID         string `json:"id"`
+	Version    string `json:"version"`
+	APIVersion string `json:"apiVersion"`
+	Name       string `json:"name"`
+	Timezone   struct {
+		Timezone string `json:"timezone"`
+	} `json:"timezone"`
+	Geolocation struct {
+		Address string `json:"address"`
+	} `json:"geolocation"`
+	AcceptedEulaVersion string `json:"acceptedEulaVersion"`
+	LatestEulaVersion   string `json:"latestEulaVersion"`
+}
+
 // ObjectID will search the Rubrik cluster for the provided "objectName" and return its ID/
 //
 // Valid "objectType" choices are:
@@ -58,6 +75,7 @@ func (c *Credentials) ObjectID(objectName, objectType string, timeout int, hostO
 		"managedVolume":   true,
 		"vcenter":         true,
 		"ec2":             true,
+		"ahv":             true,
 	}
 
 	if validObjectType[objectType] == false {
@@ -104,6 +122,9 @@ func (c *Credentials) ObjectID(objectName, objectType string, timeout int, hostO
 	case "ec2":
 		objectSummaryAPIVersion = "internal"
 		objectSummaryAPIEndpoint = fmt.Sprintf("/aws/ec2_instance?name=%s&is_relic=false&sort_by=instanceId&sort_order=asc", objectName)
+	case "ahv":
+		objectSummaryAPIVersion = "internal"
+		objectSummaryAPIEndpoint = fmt.Sprintf("/nutanix/vm?primary_cluster_id=local&is_relic=false&name=%s", objectName)
 	}
 
 	apiRequest, err := c.Get(objectSummaryAPIVersion, objectSummaryAPIEndpoint, timeout)
@@ -143,7 +164,7 @@ func (c *Credentials) ObjectID(objectName, objectType string, timeout int, hostO
 
 }
 
-// AssignSLA adds the "objectName" to the "slaName". vmware is currently the only supported "objectType". To exclude the object from all SLA assignments
+// AssignSLA adds the "objectName" to the "slaName". vmware and ahv are the only supported "objectType". To exclude the object from all SLA assignments
 // use "do not protect" as the "slaName". To assign the selected object to the SLA of the next higher level object, use "clear" as the "slaName".
 //
 // The function will return one of the following:
@@ -156,10 +177,11 @@ func (c *Credentials) AssignSLA(objectName, objectType, slaName string, timeout 
 
 	validObjectType := map[string]bool{
 		"vmware": true,
+		"ahv":    true,
 	}
 
 	if validObjectType[objectType] == false {
-		return nil, fmt.Errorf("The 'objectType' must be 'vmware'")
+		return nil, fmt.Errorf("The 'objectType' must be 'vmware' or 'ahv'.")
 	}
 
 	var slaID string
@@ -202,7 +224,32 @@ func (c *Credentials) AssignSLA(objectName, objectType, slaName string, timeout 
 		}
 
 		config["managedIds"] = []string{vmID}
+	case "ahv":
+		vmID, err := c.ObjectID(objectName, "ahv", httpTimeout)
+		if err != nil {
+			return nil, err
+		}
+
+		vmSummary, err := c.Get("internal", fmt.Sprintf("/nutanix/vm/%s", vmID), httpTimeout)
+		if err != nil {
+			return nil, err
+		}
+
+		var currentSLAID string
+		switch slaID {
+		case "INHERIT":
+			currentSLAID = vmSummary.(map[string]interface{})["configuredSlaDomainId"].(string)
+		default:
+			currentSLAID = vmSummary.(map[string]interface{})["effectiveSlaDomainId"].(string)
+		}
+
+		if slaID == currentSLAID {
+			return nil, fmt.Errorf("No change required. The AHV VM '%s' is already assigned to the '%s' SLA Domain", objectName, slaName)
+		}
+
+		config["managedIds"] = []string{vmID}
 	}
+
 	apiRequest, err := c.Post("internal", fmt.Sprintf("/sla_domain/%s/assign", slaID), config, httpTimeout)
 	if err != nil {
 		return nil, err
@@ -589,4 +636,32 @@ func (c *Credentials) OnDemandSnapshotPhysical(hostName, slaName, fileset, hostO
 	}
 
 	return apiRequeset.(map[string]interface{})["links"].([]interface{})[0].(map[string]interface{})["href"].(string), nil
+}
+
+func (c *Credentials) DateTimeConversion(dateTime string, timeout ...int) (string, error) {
+
+	httpTimeout := httpTimeout(timeout)
+
+	apiRequest, err := c.Get("v1", "/cluster/me", httpTimeout)
+	if err != nil {
+		return "", err
+	}
+
+	// Convert the API Response (map[string]interface{}) to a struct
+	var cluster Cluster
+	mapErr := mapstructure.Decode(apiRequest, &cluster)
+	if mapErr != nil {
+		return "", mapErr
+	}
+
+	currentTimezone, _ := time.LoadLocation(cluster.Timezone.Timezone)
+	// Month-Day-Year
+
+	snapshotDateTime, err := time.ParseInLocation("01-02-2006 3:04 PM", dateTime, currentTimezone)
+	if err != nil {
+		return "", fmt.Errorf("The provided 'dateTime' does not match the required format (Month-Day-Year Hour:Minute AM/PM). Ex. 01-02-2006 3:04 PM")
+	}
+
+	return snapshotDateTime.UTC().Format(time.RFC3339), nil
+
 }

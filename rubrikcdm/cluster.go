@@ -170,7 +170,6 @@ func (c *Credentials) ClusterBootstrapStatus(timeout ...int) (bool, error) {
 	numberOfAttempts := 0
 	for {
 		numberOfAttempts++
-
 		apiRequest, err := c.Get("internal", "/node_management/is_bootstrapped", httpTimeout)
 		if err != nil {
 
@@ -182,7 +181,6 @@ func (c *Credentials) ClusterBootstrapStatus(timeout ...int) (bool, error) {
 			} else if strings.Contains(err.Error(), "Unable to establish a connection") {
 
 				if numberOfAttempts == 6 {
-					fmt.Println("Attempts = 6 and error")
 					return false, err
 				}
 
@@ -849,9 +847,9 @@ func (c *Credentials) Bootstrap(clusterName, adminEmail, adminPassword, manageme
 	if currentBootstrapStatus == true {
 		return "The provided Rubrik node is already bootstrapped.", nil
 	}
-
 	bootstrap, err := c.Post("internal", "/cluster/me/bootstrap", config, httpTimeout)
 	if err != nil {
+
 		return nil, err
 	}
 	bootstrapRequestID := bootstrap.(map[string]interface{})["id"].(float64)

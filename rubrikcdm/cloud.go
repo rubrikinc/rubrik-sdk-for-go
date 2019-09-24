@@ -423,6 +423,9 @@ func (c *Credentials) AddAWSNativeAccount(awsAccountName, awsAccessKey, awsSecre
 
 // ExportEC2Instance exports the latest snapshot of the specified EC2 instance.
 //
+// The dateTime should be in the following format:  "Month:Day:Year Hour:Minute AM/PM". Ex. 04-09-2019 05:56 PM. You may also use "latest" to export the last
+// snapshot taken.
+//
 // Valid "awsRegion" choices are:
 //
 //	ap-south-1,ap-northeast-3, ap-northeast-2, ap-southeast-1, ap-southeast-2, ap-northeast-1, ca-central-1, cn-north-1, cn-northwest-1, eu-central-1, eu-west-1,
@@ -440,7 +443,7 @@ func (c *Credentials) AddAWSNativeAccount(awsAccountName, awsAccessKey, awsSecre
 // x1e.16xlarge, x1e.32xlarge, z1d.large, z1d.xlarge, z1d.2xlarge, z1d.3xlarge, z1d.6xlarge, z1d.12xlarge, d2.xlarge, d2.2xlarge, d2.4xlarge, d2.8xlarge, h1.2xlarge,
 // h1.4xlarge,  h1.8xlarge, h1.16xlarge, i3.large, i3.xlarge, i3.2xlarge, i3.4xlarge, i3.8xlarge, i3.16xlarge, f1.2xlarge, f1.4xlarge, f1.16xlarge, g3s.xlarge, g3.4xlarge,
 // g3.8xlarge, g3.16xlarge, p2.xlarge, p2.8xlarge, p2.16xlarge, p3.2xlarge, p3.8xlarge, p3.16xlarge, and p3dn.24xlarge.
-func (c *Credentials) ExportEC2Instance(instanceID, exportedInstanceName, instanceType, awsRegion, subnetID, securityGroupID string, waitForCompletion bool, timeout ...int) (interface{}, error) {
+func (c *Credentials) ExportEC2Instance(instanceID, exportedInstanceName, instanceType, awsRegion, subnetID, securityGroupID, dateTime string, waitForCompletion bool, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -611,13 +614,13 @@ func (c *Credentials) ExportEC2Instance(instanceID, exportedInstanceName, instan
 		return "", fmt.Errorf("%s is not a valid AWS Region", awsRegion)
 	}
 
-	instanceID, err := c.ObjectID(instanceID, "ec2", httpTimeout)
+	objectID, err := c.ObjectID(instanceID, "ec2", httpTimeout)
 	if err != nil {
 		return nil, err
 
 	}
 
-	allSnapshots, err := c.Get("internal", fmt.Sprintf("/aws/ec2_instance/%s/snapshot", instanceID), httpTimeout)
+	allSnapshots, err := c.Get("internal", fmt.Sprintf("/aws/ec2_instance/%s/snapshot", objectID), httpTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -629,7 +632,29 @@ func (c *Credentials) ExportEC2Instance(instanceID, exportedInstanceName, instan
 		return nil, mapErr
 	}
 
-	lastSnapshotID := snapshot.Data[snapshot.Total-1].ID
+	var snapshotID string
+	if dateTime == "latest" {
+		snapshotID = snapshot.Data[snapshot.Total-1].ID
+	} else {
+		snapshotTime, err := c.DateTimeConversion(dateTime)
+		if err != nil {
+			return "", err
+		}
+
+		for _, snapshot := range snapshot.Data {
+			// The API records EC2 Snapshots down to the second so we have to remove the :00Z from the end to check if the converted dateTime
+			// is present in the returned dates
+			if strings.Contains(snapshot.Date, strings.TrimSuffix(snapshotTime, ":00Z")) {
+				snapshotID = snapshot.ID
+			}
+
+		}
+
+		if snapshotID == "" {
+			return "", fmt.Errorf("The EC2 Instance '%s' does not have a snapshot take on '%s'", instanceID, dateTime)
+		}
+
+	}
 
 	config := map[string]string{}
 	config["instanceName"] = exportedInstanceName
@@ -638,7 +663,7 @@ func (c *Credentials) ExportEC2Instance(instanceID, exportedInstanceName, instan
 	config["subnetId"] = subnetID
 	config["securityGroupId"] = securityGroupID
 
-	exportInstance, err := c.Post("internal", fmt.Sprintf("/aws/ec2_instance/snapshot/%s/export", lastSnapshotID), config, httpTimeout)
+	exportInstance, err := c.Post("internal", fmt.Sprintf("/aws/ec2_instance/snapshot/%s/export", snapshotID), config, httpTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -1299,7 +1324,7 @@ func (c *Credentials) AzureCloudOut(container, azureAccessKey, storageAccountNam
 		}
 
 		if archiveDefinition.(map[string]interface{})["objectStoreType"] == "Azure" && archiveDefinition.(map[string]interface{})["name"] == archiveName {
-			return nil, fmt.Errorf("An arhive location with the name '%s' already exists. Please enter a unique 'archiveName'", archiveName)
+			return nil, fmt.Errorf("An archive location with the name '%s' already exists. Please enter a unique 'archiveName'", archiveName)
 		}
 
 	}
