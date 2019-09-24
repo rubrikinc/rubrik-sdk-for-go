@@ -167,7 +167,7 @@ func ExampleCredentials_AssignSLA() {
 	objectName := "vm01"
 	slaName := "Bronze"
 
-	assignSLA, err := rubrik.AssignSLA(objectName, "VMware", slaName)
+	assignSLA, err := rubrik.AssignSLA(objectName, "vmware", slaName)
 	if err != nil {
 		log.Fatal(err)
 	}
