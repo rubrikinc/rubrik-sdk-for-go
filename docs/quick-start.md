@@ -142,7 +142,7 @@ func main() {
 
 	// Set Function Variables
 	objectName := "vm01"
-	objectType := "VMware"
+	objectType := "vmware"
 	slaName := "Gold"
 
 	// Assign VM to SLA Domain
@@ -159,7 +159,7 @@ func main() {
 
 	// Set Function Variables
 	vmName := "vm02"
-	objectType = "VMware"
+	objectType = "vmware"
 	slaName = "current"
 
 	// Take On-Demand Snapshot of VM
@@ -175,10 +175,12 @@ func main() {
 	  ===========================================================*/
 
 	vmName = "vm03"
-	objectType = "VMware"
+	objectType := "vmware"
+	timeOut := 30
+	hostOS := "Windows"
 
 	// Get VM Object ID
-	vmID, err := rubrik.ObjectID(vmName, objectType)
+	vmID, err := rubrik.ObjectID(vmName, objectType, timeOut, hostOS)
 
 	// Check for error conditions
 	if err != nil {
