@@ -177,7 +177,7 @@ func main() {
 	vmName = "vm03"
 	objectType := "vmware"
 	timeOut := 30
-	hostOS := "Windows10"
+	hostOS := "Windows"
 
 	// Get VM Object ID
 	vmID, err := rubrik.ObjectID(vmName, objectType, timeOut, hostOS)
