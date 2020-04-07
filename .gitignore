@@ -1,3 +1,10 @@
+main.go
+
+# OS generated files #
+######################
 .DS_Store
 src/.DS_Store
-main.go
+
+# Custom             #
+######################
+.vscode/
