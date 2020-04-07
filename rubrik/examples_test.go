@@ -17,6 +17,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	
+	"github.com/rubrikinc/rubrik-sdk-for-go/rubrik"
 )
 
 func ExampleCredentials_ExportEC2Instance() {
