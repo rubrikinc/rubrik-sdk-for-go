@@ -67,7 +67,7 @@ git checkout devel
 ```
 
 ## New Function Development
-The `/rubrik-sdk-for-go/rubrikcdm` directory contains all functions for the SDK.
+The `/rubrik-sdk-for-go/rubrik` directory contains all functions for the SDK.
 
 At a high level the directory contains the following:
 

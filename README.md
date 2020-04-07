@@ -7,7 +7,7 @@
 
 # :hammer: Installation
 
-```go get github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm```
+```go get github.com/rubrikinc/rubrik-sdk-for-go/rubrik```
 
 # :mag: Example
 
@@ -18,7 +18,7 @@ import (
 	"fmt"
         "log"
 	
-	"github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
+	"github.com/rubrikinc/rubrik-sdk-for-go/rubrik"
 )
 
 func main() {

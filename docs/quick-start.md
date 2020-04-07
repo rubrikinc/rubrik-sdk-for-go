@@ -69,7 +69,7 @@ The Rubrik SDK for Go utilizes the `rubrikcdm.Connect()` or `rubrikcdm.ConnectEn
 To initiate the function, first import the rubrikcdm package and assign the response of `rubrikcdm.ConnectEnv()` to a variable as follows:
 
 ```go
-import "github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
+import "github.com/rubrikinc/rubrik-sdk-for-go/rubrik"
 rubrik, err := rubrikcdm.ConnectEnv()
 ```
 Any error returned by the `ConnectEnv()` function will be stored in the `err` variable. Error handling code is demonstrated in the sample code below.
@@ -81,7 +81,7 @@ Any subsequent calls to methods or functions within the rubrikcdm package are no
 
 ```go
 import "fmt"
-import "github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
+import "github.com/rubrikinc/rubrik-sdk-for-go/rubrik"
 
 rubrik := rubrikcdm.ConnectEnv()
 fmt.Println(rubrik.GetSLAObjects("Gold","VMware"))
@@ -105,7 +105,7 @@ The following are the prerequisites in order to successfully install and run the
 The Rubrik SDK for Go can be installed using the go get command. This installation method will take care of downloading and installing all dependencies of the Rubrik SDK for Go.
 
 ```
-go get github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm
+go get github.com/rubrikinc/rubrik-sdk-for-go/rubrik
 ```
 
 ### Sample Syntax - VMware Virtual Machine Operations
@@ -123,7 +123,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
+	"github.com/rubrikinc/rubrik-sdk-for-go/rubrik"
 )
 
 func main() {
@@ -230,7 +230,7 @@ go run vmwarevms.go
 
 #### Accessing the Built-in Sample Code
 
-To help accelerate development the Rubrik SDK for Go source contains many files containing common activities often performed against a Rubrik cluster. Sample code may be found on the [Rubrik SDK for Go GitHub page](https://github.com/rubrikinc/rubrik-sdk-for-go/blob/master/rubrikcdm/examples_test.go).
+To help accelerate development the Rubrik SDK for Go source contains many files containing common activities often performed against a Rubrik cluster. Sample code may be found on the [Rubrik SDK for Go GitHub page](https://github.com/rubrikinc/rubrik-sdk-for-go/blob/master/rubrik/examples_test.go).
 
 Paste the desired code into a new file, in this case named `samplefile.go`. Sample code may be executed using the following syntax
 
@@ -252,7 +252,7 @@ package main
 import (
 	"log"
 
-	"github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
+	"github.com/rubrikinc/rubrik-sdk-for-go/rubrik"
 )
 
 func main() {
@@ -389,7 +389,7 @@ git checkout devel
 
 ### New Function Development
 
-The `/rubrik-sdk-for-go/rubrikcdm` directory contains all functions for the SDK.
+The `/rubrik-sdk-for-go/rubrik` directory contains all functions for the SDK.
 
 At a high level the directory contains the following:
 
