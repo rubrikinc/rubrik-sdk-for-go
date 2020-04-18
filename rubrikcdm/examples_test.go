@@ -717,7 +717,7 @@ func ExampleCredentials_RecoverFileDownload() {
 	dateTime := "04-17-2020 12:49 PM"
 	filePath := "/rubrik/bu-tar01/test01"
 
-	hostSnapshot, err := rubrik.RecoverFileDownload(hostName, fileset, hostOS, filePath, dateTime)
+	fileDownload, err := rubrik.RecoverFileDownload(hostName, fileset, hostOS, filePath, dateTime)
 	if err != nil {
 		log.Fatal(err)
 	}
