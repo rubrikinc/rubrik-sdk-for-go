@@ -704,3 +704,21 @@ func ExampleCredentials_AzureCloudOn() {
 	}
 
 }
+
+func ExampleCredentials_RecoverFileDownload() {
+	rubrik, err := rubrikcdm.ConnectEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	hostName := "rubrik-sql01.hybrid-lab.local"
+	fileset := "fileset01"
+	hostOS := "Linux"
+	dateTime := "04-17-2020 12:49 PM"
+	filePath := "/rubrik/bu-tar01/test01"
+
+	fileDownload, err := rubrik.RecoverFileDownload(hostName, fileset, hostOS, filePath, dateTime)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
