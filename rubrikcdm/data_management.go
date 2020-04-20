@@ -745,11 +745,11 @@ func (c *Credentials) RecoverFileDownload(hostName, fileset, hostOS, filePath, d
 	config := map[string]string{
 		"sourceDir": filePath,
 	}
-	apiRequeset, err := c.Post("v1", fmt.Sprintf("/fileset/snapshot/%s/download_file", snapshotID), config)
+	apiRequest, err := c.Post("v1", fmt.Sprintf("/fileset/snapshot/%s/download_file", snapshotID), config)
 
 	if err != nil {
 		return "", err
 	}
 
-	return apiRequeset.(map[string]interface{})["links"].([]interface{})[0].(map[string]interface{})["href"].(string), nil
+	return apiRequest.(map[string]interface{})["links"].([]interface{})[0].(map[string]interface{})["href"].(string), nil
 }
