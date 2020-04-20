@@ -711,7 +711,7 @@ func ExampleCredentials_RecoverFileDownload() {
 		log.Fatal(err)
 	}
 
-	hostname := "rubrik-sql01.hybrid-lab.local"
+	hostName := "rubrik-sql01.hybrid-lab.local"
 	fileset := "fileset01"
 	hostOS := "Linux"
 	dateTime := "04-17-2020 12:49 PM"
