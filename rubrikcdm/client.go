@@ -46,6 +46,7 @@ type Credentials struct {
 	NodeIP   string
 	Username string
 	Password string
+	APIToken string
 }
 
 // Connect initializes a new API client based on manually provided Rubrik cluster credentials. When possible,
@@ -56,6 +57,18 @@ func Connect(nodeIP, username, password string) *Credentials {
 		NodeIP:   nodeIP,
 		Username: username,
 		Password: password,
+	}
+
+	return client
+}
+
+// TokenConnect initializes a new API client based on manually provided Rubrik cluster API token. When possible,
+// the Rubrik API token should not be stored as plain text in your .go file. ConnectEnv() can be used
+// as a safer alternative.
+func TokenConnect(nodeIP, token string) *Credentials {
+	client := &Credentials{
+		NodeIP:   nodeIP,
+		APIToken: token,
 	}
 
 	return client
@@ -135,6 +148,8 @@ func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config
 	}
 	if len(c.Username) != 0 {
 		request.SetBasicAuth(c.Username, c.Password)
+	} else {
+		request.Header.Add("Authorization", "Bearer "+c.APIToken)
 	}
 
 	request.Header.Set("Content-Type", "application/json")
