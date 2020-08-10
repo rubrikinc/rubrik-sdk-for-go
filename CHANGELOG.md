@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 - `ConnectAPIToken()` ([Issue 40](https://github.com/rubrikinc/rubrik-sdk-for-go/issues/40))
+- `RecoverFileDownload()` 
 
 
 ### Changed
