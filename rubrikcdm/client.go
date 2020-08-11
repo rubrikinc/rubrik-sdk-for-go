@@ -46,12 +46,13 @@ type Credentials struct {
 	NodeIP   string
 	Username string
 	Password string
+	APIToken string
 }
 
 // Connect initializes a new API client based on manually provided Rubrik cluster credentials. When possible,
 // the Rubrik credentials should not be stored as plain text in your .go file. ConnectEnv() can be used
 // as a safer alternative.
-func Connect(nodeIP, username, password string) *Credentials {
+func Connect(nodeIP, username, password string, apiToken ...string) *Credentials {
 	client := &Credentials{
 		NodeIP:   nodeIP,
 		Username: username,
@@ -61,36 +62,70 @@ func Connect(nodeIP, username, password string) *Credentials {
 	return client
 }
 
+// ConnectAPIToken initializes a new API client based on authenticating using an API Token. When possible,
+// the Rubrik credentials should not be stored as plain text in your .go file. ConnectEnv() can be used
+// as a safer alternative.
+func ConnectAPIToken(nodeIP, apiToken string) *Credentials {
+	client := &Credentials{
+		NodeIP:   nodeIP,
+		APIToken: apiToken,
+	}
+	return client
+}
+
 // ConnectEnv is the preferred method to initialize a new API client by attempting to read the
 // following environment variables:
 //
 //  rubrik_cdm_node_ip
 //
+//  rubrik_cdm_token
+//
 //  rubrik_cdm_username
 //
 //  rubrik_cdm_password
+//
+// rubrik_cdm_token will always take precedence over rubrik_cdm_username and rubrik_cdm_password
 func ConnectEnv() (*Credentials, error) {
 
 	nodeIP, ok := os.LookupEnv("rubrik_cdm_node_ip")
 	if ok != true {
 		return nil, errors.New("The `rubrik_cdm_node_ip` environment variable is not present")
 	}
-	username, ok := os.LookupEnv("rubrik_cdm_username")
+
+	apiTokenFound := true
+	apiToken, ok := os.LookupEnv("rubrik_cdm_token")
 	if ok != true {
-		return nil, errors.New("The `rubrik_cdm_username` environment variable is not present")
-	}
-	password, ok := os.LookupEnv("rubrik_cdm_password")
-	if ok != true {
-		return nil, errors.New("The `rubrik_cdm_password` environment variable is not present")
+		apiTokenFound = false
+
 	}
 
-	client := &Credentials{
-		NodeIP:   nodeIP,
-		Username: username,
-		Password: password,
+	var client *Credentials
+	if apiTokenFound == false {
+		username, ok := os.LookupEnv("rubrik_cdm_username")
+		if ok != true {
+			return nil, errors.New("The `rubrik_cdm_username` or `rubrik_cdm_token` environment variable is not present")
+		}
+		password, ok := os.LookupEnv("rubrik_cdm_password")
+		if ok != true {
+			return nil, errors.New("The `rubrik_cdm_password` or `rubrik_cdm_token` environment variable is not present")
+		}
+
+		client = &Credentials{
+			NodeIP:   nodeIP,
+			Username: username,
+			Password: password,
+		}
+
+	} else {
+		client = &Credentials{
+			NodeIP:   nodeIP,
+			APIToken: apiToken,
+		}
+
 	}
 
 	return client, nil
+
 }
 
 // Consolidate the base API functions.
@@ -135,6 +170,9 @@ func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config
 	}
 	if len(c.Username) != 0 {
 		request.SetBasicAuth(c.Username, c.Password)
+	} else {
+
+		request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.APIToken))
 	}
 
 	request.Header.Set("Content-Type", "application/json")
@@ -220,6 +258,15 @@ func httpTimeout(timeout []int) int {
 		return int(15) // if not timeout value is provided, set the default to 15
 	}
 	return int(timeout[0]) // set the timeout value to the first value in the timeout slice
+
+}
+
+// apiToken returns a default apiToken value of "" or use the value provided by the end user
+func apiToken(apiToken []string) string {
+	if len(apiToken) == 0 {
+		return "" // if no apiToken value is provided, set the default to ""
+	}
+	return apiToken[0] // set the apiToken value to the first value in the apiToken slice
 
 }
 

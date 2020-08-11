@@ -16,6 +16,7 @@ The Rubrik SDK for Go provides two methods for connecting to your Rubrik cluster
 Storing credentials in environment variables is a more secure process than storing them in your source code, and it ensures that your credentials are not accidentally shared if your code is uploaded to an internal or public version control system such as GitHub. When calling rubrikcdm.Connect(), it will attempt to read the Rubrik Cluster credentials from the following environment variables:
 
 * **rubrik_cdm_node_ip** (Contains the IP/FQDN of a Rubrik node)
+* **rubrik_cdm_token** (Contains an API Token with configured access to the Rubrik cluster. The token will always take precedence over rubrik_cdm_username and rubrik_cdm_password)
 * **rubrik_cdm_username** (Contains a username with configured access to the Rubrik cluster)
 * **rubrik_cdm_password** (Contains the password for the above user).
 
@@ -27,8 +28,13 @@ For Microsoft Windows-based operating systems the environment variables can be s
 
 ```
 setx rubrik_cdm_node_ip "192.168.0.100"
+setx rubrik_cdm_token "ajw02322jfj22sl3"
+
+```
+setx rubrik_cdm_node_ip "192.168.0.100"
 setx rubrik_cdm_username "user@domain.com"
 setx rubrik_cdm_password "SecretPassword"
+```
 ```
 
 Run set without any other parameters to view current environment variables. Using setx saves the environment variables permanently, and the variables defined in the current shell will not be available until a new shell is opened. Using set instead of setx will define variables in the current shell session, but they will not be saved between sessions.
@@ -36,6 +42,11 @@ Run set without any other parameters to view current environment variables. Usin
 #### Setting Environment Variables in macOS and \*nix
 
 For macOS and \*nix based operating systems the environment variables can be set utilizing the export command as follows:
+
+```
+export rubrik_cdm_node_ip=192.168.0.100
+export rubrik_cdm_token "ajw02322jfj22sl3"
+```
 
 ```
 export rubrik_cdm_node_ip=192.168.0.100
@@ -49,7 +60,7 @@ Once set, the `rubrikcdm.ConnectEnv()` function will automatically utilize the d
 
 Authenticate by Providing Username and Password
 
-Although the use of environment variables are recommended, there may be scenarios where directly sending credentials to the `rubrikcdm.Connect()` function as parameters makes sense. To pass connection and credential information, simply call the `rubrikcdm.Connect()` function, passing the node IP, username, and password as follows:
+Although the use of environment variables are recommended, there may be scenarios where directly sending credentials to the `rubrikcdm.Connect()` or `rubrikcdm.ConnectAPIToken` function as parameters makes sense. To pass connection and credential information, simply call the `rubrikcdm.Connect()` function, passing the node IP, username, and password as follows:
 
 ```
 nodeIp := "192.168.0.100"
@@ -59,9 +70,16 @@ password := "SecretPassword"
 rubrik := rubrikcdm.Connect(nodeIp, username, password)
 ```
 
+```
+nodeIp := "192.168.0.100"
+apiToken := "ajw02322jfj22sl3"
+
+rubrik := rubrikcdm.ConnectAPIToken(nodeIp, apiToken)
+```
+
 ## Connecting to a Rubrik Cluster
 
-The Rubrik SDK for Go utilizes the `rubrikcdm.Connect()` or `rubrikcdm.ConnectEnv()` functions as a mechanism to provide credentials to the Rubrik CDM. `Connect()` or `ConnectEnv()` only needs to be called once. Connecting returns a `struct`, which should be stored in a variable to be used for subsequent calls throughout the remainder of the Go program.
+The Rubrik SDK for Go utilizes the `rubrikcdm.Connect()`, `rubrikcdm.ConnectAPIToken()`, or `rubrikcdm.ConnectEnv()` functions as a mechanism to provide credentials to the Rubrik CDM. `Connect()`, `ConnectAPIToken()` or `ConnectEnv()` only needs to be called once. Connecting returns a `struct`, which should be stored in a variable to be used for subsequent calls throughout the remainder of the Go program.
 
 | Note: The following examples use `ConnectEnv().` Using `Connect()` is functionally equivalent. |
 | --- |
@@ -142,7 +160,7 @@ func main() {
 
 	// Set Function Variables
 	objectName := "vm01"
-	objectType := "VMware"
+	objectType := "vmware"
 	slaName := "Gold"
 
 	// Assign VM to SLA Domain
@@ -159,7 +177,7 @@ func main() {
 
 	// Set Function Variables
 	vmName := "vm02"
-	objectType = "VMware"
+	objectType = "vmware"
 	slaName = "current"
 
 	// Take On-Demand Snapshot of VM
@@ -175,10 +193,12 @@ func main() {
 	  ===========================================================*/
 
 	vmName = "vm03"
-	objectType = "VMware"
+	objectType := "vmware"
+	timeOut := 30
+	hostOS := "Windows"
 
 	// Get VM Object ID
-	vmID, err := rubrik.ObjectID(vmName, objectType)
+	vmID, err := rubrik.ObjectID(vmName, objectType, timeOut, hostOS)
 
 	// Check for error conditions
 	if err != nil {
