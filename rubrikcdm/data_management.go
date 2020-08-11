@@ -665,3 +665,91 @@ func (c *Credentials) DateTimeConversion(dateTime string, timeout ...int) (strin
 	return snapshotDateTime.UTC().Format(time.RFC3339), nil
 
 }
+
+// RecoverFileDownload initiates to create a file download job from a fileset backup.
+//
+// Valid "hostOS" choices are:
+//
+//	Linux and Windows
+//
+// The function will return:
+//	The job status URL for file download job from a fileset backup
+func (c *Credentials) RecoverFileDownload(hostName, fileset, hostOS, filePath, dateTime string, timeout ...int) (string, error) {
+	httpTimeout := httpTimeout(timeout)
+
+	validHostOs := map[string]bool{
+		"Linux":   true,
+		"Windows": true,
+	}
+
+	if validHostOs[hostOS] == false {
+		return "", fmt.Errorf("The 'hostOS' must be 'Linux' or 'Windows")
+	}
+
+	hostID, err := c.ObjectID(hostName, "physicalHost", httpTimeout)
+	if err != nil {
+		return "", err
+	}
+
+	filesetTemplateID, err := c.ObjectID(fileset, "filesetTemplate", httpTimeout, hostOS)
+	if err != nil {
+		return "", err
+	}
+
+	filesetSummary, err := c.Get("v1", fmt.Sprintf("/fileset?primary_cluster_id=local&host_id=%s&is_relic=false&template_id=%s", hostID, filesetTemplateID))
+	if err != nil {
+		return "", err
+	}
+
+	if filesetSummary.(map[string]interface{})["total"] == 0 {
+		return "", fmt.Errorf("The Physical Host '%s' is not assigned to the '%s' Fileset", hostName, fileset)
+	}
+
+	filesetID := filesetSummary.(map[string]interface{})["data"].([]interface{})[0].(map[string]interface{})["id"].(string)
+
+	filesetDetail, err := c.Get("v1", fmt.Sprintf("/fileset/%s", filesetID))
+	if err != nil {
+		return "", err
+	}
+	snapshotSummary := filesetDetail.(map[string]interface{})["snapshots"].([]interface{})
+
+	if len(snapshotSummary) == 0 {
+		return "", fmt.Errorf("The Physical Host '%s' does not have any snapshot by '%s' Fileset", hostName, fileset)
+	}
+
+	snapshotDateTimeStr, err := c.DateTimeConversion(dateTime)
+	if err != nil {
+		return "", err
+	}
+
+	snapshotDateTime, _ := time.Parse(time.RFC3339, snapshotDateTimeStr)
+	if err != nil {
+		return "", err
+	}
+
+	var snapshotID string
+	for _, v := range snapshotSummary {
+		date, _ := time.Parse(time.RFC3339, v.(map[string]interface{})["date"].(string))
+		if err != nil {
+			return "", err
+		}
+		diff := date.Sub(snapshotDateTime)
+		if 0 <= diff && diff < time.Duration(60)*time.Second {
+			snapshotID = v.(map[string]interface{})["id"].(string)
+			break
+		}
+	}
+	if snapshotID == "" {
+		return "", fmt.Errorf("The Physical Host '%s' does not have any snapshot at '%s'", hostName, dateTime)
+	}
+	config := map[string]string{
+		"sourceDir": filePath,
+	}
+	apiRequest, err := c.Post("v1", fmt.Sprintf("/fileset/snapshot/%s/download_file", snapshotID), config)
+
+	if err != nil {
+		return "", err
+	}
+
+	return apiRequest.(map[string]interface{})["links"].([]interface{})[0].(map[string]interface{})["href"].(string), nil
+}
