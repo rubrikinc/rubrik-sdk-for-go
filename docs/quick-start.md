@@ -13,7 +13,7 @@ The Rubrik SDK for Go provides two methods for connecting to your Rubrik cluster
 
 ### Authenticating with Environment Variables
 
-Storing credentials in environment variables is a more secure process than storing them in your source code, and it ensures that your credentials are not accidentally shared if your code is uploaded to an internal or public version control system such as GitHub. When calling rubrikcdm.ConnectEnv(), it will attempt to read the Rubrik Cluster credentials from the following environment variables:
+Storing credentials in environment variables is a more secure process than storing them in your source code, and it ensures that your credentials are not accidentally shared if your code is uploaded to an internal or public version control system such as GitHub. When calling `rubrikcdm.ConnectEnv()`, it will attempt to read the Rubrik Cluster credentials from the following environment variables:
 
 * **rubrik_cdm_node_ip** (Contains the IP/FQDN of a Rubrik node)
 * **rubrik_cdm_token** (Contains an API Token with configured access to the Rubrik cluster. The token will always take precedence over rubrik_cdm_username and rubrik_cdm_password)
