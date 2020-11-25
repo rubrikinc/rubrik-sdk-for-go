@@ -29,12 +29,12 @@ For Microsoft Windows-based operating systems the environment variables can be s
 ```
 setx rubrik_cdm_node_ip "192.168.0.100"
 setx rubrik_cdm_token "ajw02322jfj22sl3"
+```
 
 ```
 setx rubrik_cdm_node_ip "192.168.0.100"
 setx rubrik_cdm_username "user@domain.com"
 setx rubrik_cdm_password "SecretPassword"
-```
 ```
 
 Run set without any other parameters to view current environment variables. Using setx saves the environment variables permanently, and the variables defined in the current shell will not be available until a new shell is opened. Using set instead of setx will define variables in the current shell session, but they will not be saved between sessions.
