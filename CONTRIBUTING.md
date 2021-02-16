@@ -21,7 +21,7 @@ md src\github.com\rubrikinc
 ```
 cd src\github.com\rubrikinc
 ```
-5. Clone the Rubrik SDK for Python repository
+5. Clone the Rubrik SDK for Go repository
 ```
 git clone https://github.com/rubrikinc/rubrik-sdk-for-go.git
 ```
@@ -53,7 +53,7 @@ mkdir -p src/github.com/rubrikinc
 ```
 cd src/github.com/rubrikinc
 ```
-5. Clone the Rubrik SDK for Python repository
+5. Clone the Rubrik SDK for Go repository
 ```
 git clone https://github.com/rubrikinc/rubrik-sdk-for-go.git
 ```

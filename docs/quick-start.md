@@ -13,7 +13,7 @@ The Rubrik SDK for Go provides two methods for connecting to your Rubrik cluster
 
 ### Authenticating with Environment Variables
 
-Storing credentials in environment variables is a more secure process than storing them in your source code, and it ensures that your credentials are not accidentally shared if your code is uploaded to an internal or public version control system such as GitHub. When calling rubrikcdm.Connect(), it will attempt to read the Rubrik Cluster credentials from the following environment variables:
+Storing credentials in environment variables is a more secure process than storing them in your source code, and it ensures that your credentials are not accidentally shared if your code is uploaded to an internal or public version control system such as GitHub. When calling `rubrikcdm.ConnectEnv()`, it will attempt to read the Rubrik Cluster credentials from the following environment variables:
 
 * **rubrik_cdm_node_ip** (Contains the IP/FQDN of a Rubrik node)
 * **rubrik_cdm_token** (Contains an API Token with configured access to the Rubrik cluster. The token will always take precedence over rubrik_cdm_username and rubrik_cdm_password)
@@ -29,12 +29,12 @@ For Microsoft Windows-based operating systems the environment variables can be s
 ```
 setx rubrik_cdm_node_ip "192.168.0.100"
 setx rubrik_cdm_token "ajw02322jfj22sl3"
+```
 
 ```
 setx rubrik_cdm_node_ip "192.168.0.100"
 setx rubrik_cdm_username "user@domain.com"
 setx rubrik_cdm_password "SecretPassword"
-```
 ```
 
 Run set without any other parameters to view current environment variables. Using setx saves the environment variables permanently, and the variables defined in the current shell will not be available until a new shell is opened. Using set instead of setx will define variables in the current shell session, but they will not be saved between sessions.
