@@ -76,13 +76,13 @@ func ConnectAPIToken(nodeIP, apiToken string) *Credentials {
 // ConnectEnv is the preferred method to initialize a new API client by attempting to read the
 // following environment variables:
 //
-//  rubrik_cdm_node_ip
+//	rubrik_cdm_node_ip
 //
-//  rubrik_cdm_token
+//	rubrik_cdm_token
 //
-//  rubrik_cdm_username
+//	rubrik_cdm_username
 //
-//  rubrik_cdm_password
+//	rubrik_cdm_password
 //
 // rubrik_cdm_token will always take precedence over rubrik_cdm_username and rubrik_cdm_password
 func ConnectEnv() (*Credentials, error) {
@@ -164,7 +164,7 @@ func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config
 	case "DELETE":
 		request, _ = http.NewRequest(callType, requestURL, nil)
 	case "JOB_STATUS":
-		// Overwrite the default requstURL with the job status url and convert to string
+		// Overwrite the default requestURL with the job status url and convert to string
 		requestURL = config.(string)
 		request, _ = http.NewRequest("GET", requestURL, nil)
 	}
@@ -248,7 +248,7 @@ func endpointValidation(apiEndpoint string) string {
 		return "errorStart"
 	} else if string(apiEndpoint[len(apiEndpoint)-1]) == "/" {
 
-		if string(apiEndpoint[len(apiEndpoint)-2]) != "=" { // accounting for exeption =/
+		if string(apiEndpoint[len(apiEndpoint)-2]) != "=" { // accounting for exemption =/
 			return "errorEnd"
 		}
 	}

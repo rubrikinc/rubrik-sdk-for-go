@@ -307,7 +307,7 @@ type CloudOn struct {
 // AddAWSNativeAccount enables the management and protection of Amazon Elastic Compute Cloud (Amazon EC2) instances. The "regionalBoltNetworkConfigs"
 // should be a list of dictionaries in the following format:
 //
-// 	usEast1 := map[string]string{}
+//	usEast1 := map[string]string{}
 //	usEast1["region"] = "us-east-1"
 //	usEast1["region"] = "us-east-1"
 //	usEast1["region"] = "us-east-1"
@@ -323,8 +323,11 @@ type CloudOn struct {
 //	eu-west-2, eu-west-3, us-west-1, us-east-1, us-east-2, and us-west-2.
 //
 // The function will return one of the following:
+//
 //	No change required. Cloud native source with access key '{awsAccessKey}' is already configured on the Rubrik cluster.
+//
 // //
+//
 //	The full API response for POST /internal/aws/account.
 func (c *Credentials) AddAWSNativeAccount(awsAccountName, awsAccessKey, awsSecretKey string, awsRegions []string, regionalBoltNetworkConfigs interface{}, timeout ...int) (interface{}, error) {
 
@@ -690,8 +693,8 @@ func (c *Credentials) ExportEC2Instance(instanceID, exportedInstanceName, instan
 
 }
 
-// RemoveAWSAccount deletes the specific AWS account from the Rubrik clsuter and waits for the job to complete before returning the JobStatus API response.
-func (c *Credentials) RemoveAWSAccount(awsAccountName string, deleteExsitingSnapshots bool, timeout ...int) (interface{}, error) {
+// RemoveAWSAccount deletes the specific AWS account from the Rubrik cluster and waits for the job to complete before returning the JobStatus API response.
+func (c *Credentials) RemoveAWSAccount(awsAccountName string, deleteExistingSnapshots bool, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -700,7 +703,7 @@ func (c *Credentials) RemoveAWSAccount(awsAccountName string, deleteExsitingSnap
 		return nil, err
 	}
 
-	deleteAPIRequest, err := c.Delete("internal", fmt.Sprintf("/aws/account/%s?delete_existing_snapshots=%t", awsAccountSummary.ID, deleteExsitingSnapshots), httpTimeout)
+	deleteAPIRequest, err := c.Delete("internal", fmt.Sprintf("/aws/account/%s?delete_existing_snapshots=%t", awsAccountSummary.ID, deleteExistingSnapshots), httpTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -721,23 +724,24 @@ func (c *Credentials) RemoveAWSAccount(awsAccountName string, deleteExsitingSnap
 }
 
 // UpdateAWSNativeAccount updates the configuration of a AWS Native account. The following values, from PATCH /internal/aws/account/{id} are options for the config:
-//  {
-//   "name": "string",
-//   "accessKey": "string",
-//   "secretKey": "string",
-//   "regions": [
-//     "string"
-//   ],
-//   "regionalBoltNetworkConfigs": [
-//     {
-//       "region": "string",
-//       "vNetId": "string",
-//       "subnetId": "string",
-//       "securityGroupId": "string"
-//     }
-//   ],
-//   "disasterRecoveryArchivalLocationId": "string"
-// }
+//
+//	 {
+//	  "name": "string",
+//	  "accessKey": "string",
+//	  "secretKey": "string",
+//	  "regions": [
+//	    "string"
+//	  ],
+//	  "regionalBoltNetworkConfigs": [
+//	    {
+//	      "region": "string",
+//	      "vNetId": "string",
+//	      "subnetId": "string",
+//	      "securityGroupId": "string"
+//	    }
+//	  ],
+//	  "disasterRecoveryArchivalLocationId": "string"
+//	}
 func (c *Credentials) UpdateAWSNativeAccount(archiveName string, config map[string]interface{}, timeout ...int) (*UpdateAWSNative, error) {
 
 	httpTimeout := httpTimeout(timeout)
@@ -774,9 +778,10 @@ func (c *Credentials) UpdateAWSNativeAccount(archiveName string, config map[stri
 //	standard, standard_ia, and reduced_redundancy
 //
 // The function will return one of the following:
-//	- No change required. The '{archiveName}' archive location is already configured on the Rubrik cluster.
 //
-//	- The full API response for POST /internal/archive/object_store.
+//   - No change required. The '{archiveName}' archive location is already configured on the Rubrik cluster.
+//
+//   - The full API response for POST /internal/archive/object_store.
 func (c *Credentials) AWSS3CloudOutRSA(awsBucketName, storageClass, archiveName, awsRegion, awsAccessKey, awsSecretKey, rsaKey string, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
@@ -825,7 +830,7 @@ func (c *Credentials) AWSS3CloudOutRSA(awsBucketName, storageClass, archiveName,
 	config["objectStoreType"] = "S3"
 	config["pemFileContent"] = rsaKey
 
-	// Create a simplified config that only includes the values returned by Rubrik that can be used for idempotence check
+	// Create a simplified config that only includes the values returned by Rubrik that can be used for idempotent check
 	redactedConfig := map[string]interface{}{}
 	redactedConfig["name"] = archiveName
 	redactedConfig["bucket"] = strings.ToLower(awsBucketName)
@@ -897,7 +902,7 @@ func (c *Credentials) CloudObjectStore(timeout ...int) (*CloudObjectStore, error
 
 }
 
-// AWSAccountSummary retrives all information from an AWS Native Account.
+// AWSAccountSummary retrieves all information from an AWS Native Account.
 func (c *Credentials) AWSAccountSummary(awsAccountName string, timeout ...int) (*CurrentAWSAccountID, error) {
 
 	httpTimeout := httpTimeout(timeout)
@@ -997,54 +1002,55 @@ func (c *Credentials) RemoveArchiveLocation(archiveName string, timeout ...int) 
 }
 
 // UpdateCloudArchiveLocation updates the configuration of a the Cloud Archival Location. The following values, from PATCH /internal/object_store/{id} are options for the config:
-//  {
-//     "name": "string",
-//     "accessKey": "string",
-//     "secretKey": "string",
-//     "endpoint": "string",
-//     "numBuckets": 0,
-//     "isComputeEnabled": true,
-//     "isConsolidationEnabled": true,
-//     "defaultComputeNetworkConfig": {
-//       "subnetId": "string",
-//       "vNetId": "string",
-//       "securityGroupId": "string",
-//       "resourceGroupId": "string"
-//     },
-//     "storageClass": "string",
-//     "glacierConfig": {
-//       "retrievalTier": "BulkRetrieval",
-//       "vaultLockPolicy": {
-//         "fileLockPeriodInDays": 0
-//       }
-//     },
-//     "azureComputeSummary": {
-//       "tenantId": "string",
-//       "subscriptionId": "string",
-//       "clientId": "string",
-//       "region": "string",
-//       "generalPurposeStorageAccountName": "string",
-//       "containerName": "string",
-//       "environment": "AZURE"
-//     },
-//     "azureComputeSecret": {
-//     "  clientSecret": "string"
-//     },
-//     "archivalProxyConfig": {
-//       "protocol": "HTTP",
-//       "proxyServer": "string",
-//       "portNumber": 0,
-//       "userName": "string",
-//       "password": "string"
-//     },
-//     "computeProxyConfig": {
-//       "protocol": "HTTP",
-//       "proxyServer": "string",
-//       "portNumber": 0,
-//       "userName": "string",
-//       "password": "string"
-//     }
-//   }
+//
+//	{
+//	   "name": "string",
+//	   "accessKey": "string",
+//	   "secretKey": "string",
+//	   "endpoint": "string",
+//	   "numBuckets": 0,
+//	   "isComputeEnabled": true,
+//	   "isConsolidationEnabled": true,
+//	   "defaultComputeNetworkConfig": {
+//	     "subnetId": "string",
+//	     "vNetId": "string",
+//	     "securityGroupId": "string",
+//	     "resourceGroupId": "string"
+//	   },
+//	   "storageClass": "string",
+//	   "glacierConfig": {
+//	     "retrievalTier": "BulkRetrieval",
+//	     "vaultLockPolicy": {
+//	       "fileLockPeriodInDays": 0
+//	     }
+//	   },
+//	   "azureComputeSummary": {
+//	     "tenantId": "string",
+//	     "subscriptionId": "string",
+//	     "clientId": "string",
+//	     "region": "string",
+//	     "generalPurposeStorageAccountName": "string",
+//	     "containerName": "string",
+//	     "environment": "AZURE"
+//	   },
+//	   "azureComputeSecret": {
+//	   "  clientSecret": "string"
+//	   },
+//	   "archivalProxyConfig": {
+//	     "protocol": "HTTP",
+//	     "proxyServer": "string",
+//	     "portNumber": 0,
+//	     "userName": "string",
+//	     "password": "string"
+//	   },
+//	   "computeProxyConfig": {
+//	     "protocol": "HTTP",
+//	     "proxyServer": "string",
+//	     "portNumber": 0,
+//	     "userName": "string",
+//	     "password": "string"
+//	   }
+//	 }
 func (c *Credentials) UpdateCloudArchiveLocation(archiveName string, config map[string]interface{}, timeout ...int) (*UpdateArchiveLocations, error) {
 
 	httpTimeout := httpTimeout(timeout)
@@ -1101,9 +1107,10 @@ func (c *Credentials) UpdateCloudArchiveLocation(archiveName string, config map[
 //	standard, standard_ia, and reduced_redundancy
 //
 // The function will return one of the following:
-//	- No change required. The '{archiveName}' archive location is already configured on the Rubrik cluster.
 //
-//	- The full API response for POST /internal/archive/object_store/{archiveID}
+//   - No change required. The '{archiveName}' archive location is already configured on the Rubrik cluster.
+//
+//   - The full API response for POST /internal/archive/object_store/{archiveID}
 func (c *Credentials) AWSS3CloudOutKMS(awsBucketName, storageClass, archiveName, awsRegion, awsAccessKey, awsSecretKey, kmsMasterKeyID string, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
@@ -1152,7 +1159,7 @@ func (c *Credentials) AWSS3CloudOutKMS(awsBucketName, storageClass, archiveName,
 	config["objectStoreType"] = "S3"
 	config["kmsMasterKeyId"] = kmsMasterKeyID
 
-	// Create a simplified config that only includes the values returned by Rubrik that can be used for idempotence check
+	// Create a simplified config that only includes the values returned by Rubrik that can be used for idempotent check
 	redactedConfig := map[string]interface{}{}
 	redactedConfig["name"] = archiveName
 	redactedConfig["bucket"] = strings.ToLower(awsBucketName)
@@ -1202,9 +1209,10 @@ func (c *Credentials) AWSS3CloudOutKMS(awsBucketName, storageClass, archiveName,
 // and then launch that AMI into an Elastic Compute Cloud (EC2) instance on an Amazon Virtual Private Cloud (VPC).
 //
 // The function will return one of the following:
-//	- No change required. The '{archiveName}' archive location is already configured for CloudOn.
 //
-//	- The full API response for PATCH /internal/archive/object_store.
+//   - No change required. The '{archiveName}' archive location is already configured for CloudOn.
+//
+//   - The full API response for PATCH /internal/archive/object_store.
 func (c *Credentials) AWSS3CloudOn(archiveName, vpcID, subnetID, securityGroupID string, timeout ...int) (*CloudOn, error) {
 
 	httpTimeout := httpTimeout(timeout)
@@ -1256,9 +1264,10 @@ func (c *Credentials) AWSS3CloudOn(archiveName, vpcID, subnetID, securityGroupID
 //	default, china, germany, and government
 //
 // The function will return one of the following:
-//	- No change required. The '{archiveName}' archive location is already configured on the Rubrik cluster.
 //
-//	- The full API response for POST /internal/archive/object_store.
+//   - No change required. The '{archiveName}' archive location is already configured on the Rubrik cluster.
+//
+//   - The full API response for POST /internal/archive/object_store.
 func (c *Credentials) AzureCloudOut(container, azureAccessKey, storageAccountName, archiveName, instanceType, rsaKey string, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
@@ -1290,7 +1299,7 @@ func (c *Credentials) AzureCloudOut(container, azureAccessKey, storageAccountNam
 		config["endpoint"] = "core.chinacloudapi.cn"
 	}
 
-	// Create a simplified config that only includes the values returned by Rubrik that can be used for idempotence check
+	// Create a simplified config that only includes the values returned by Rubrik that can be used for idempotent check
 	redactedConfig := map[string]interface{}{}
 	redactedConfig["objectStoreType"] = "Azure"
 	redactedConfig["name"] = archiveName
@@ -1347,14 +1356,16 @@ func (c *Credentials) AzureCloudOut(container, azureAccessKey, storageAccountNam
 // of the associated virtual machine on the Microsoft Azure cloud platform.
 //
 // Valid "region" choices are:
-// 	westus, westus2, centralus, eastus, eastus2, northcentralus, southcentralus, westcentralus, canadacentral, canadaeast, brazilsouth,
+//
+//	westus, westus2, centralus, eastus, eastus2, northcentralus, southcentralus, westcentralus, canadacentral, canadaeast, brazilsouth,
 //	northeurope, westeurope, uksouth, ukwest, eastasia, southeastasia, japaneast, japanwest, australiaeast, australiasoutheast, centralindia,
 //	southindia, westindia, koreacentral, koreasouth
 //
 // The function will return one of the following:
-//	- No change required. The '{archiveName}' archive location is already configured for CloudOn.
 //
-//	- The full API response for PATCH /internal/archive/object_store.
+//   - No change required. The '{archiveName}' archive location is already configured for CloudOn.
+//
+//   - The full API response for PATCH /internal/archive/object_store.
 func (c *Credentials) AzureCloudOn(archiveName, container, storageAccountName, applicationID, applicationKey, directoryID, region, virtualNetworkID, subnetName, securityGroupID string, timeout ...int) (*CloudOn, error) {
 
 	httpTimeout := httpTimeout(timeout)
@@ -1414,7 +1425,7 @@ func (c *Credentials) AzureCloudOn(archiveName, container, storageAccountName, a
 	config["defaultComputeNetworkConfig"].(map[string]string)["securityGroupId"] = securityGroupID
 	config["defaultComputeNetworkConfig"].(map[string]string)["resourceGroupId"] = strings.Split(virtualNetworkID, "/")[4]
 
-	// Create a simplified config that only includes the values returned by Rubrik that can be used for idempotence check
+	// Create a simplified config that only includes the values returned by Rubrik that can be used for idempotent check
 	redactedConfig := map[string]interface{}{}
 	redactedConfig["name"] = archiveName
 	redactedConfig["objectStoreType"] = "Azure"
