@@ -3,7 +3,8 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License prop
-//  http://www.apache.org/licenses/LICENSE-2.0
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -63,6 +64,7 @@ type Cluster struct {
 // Valid "objectType" choices are:
 //
 //	vmware, sla, vmwareHost, physicalHost, filesetTemplate, managedVolume, vcenter, and ec2.
+//
 // When the "objectType" is "ec2", the objectName should correspond to the AWS Instance ID.
 func (c *Credentials) ObjectID(objectName, objectType string, timeout int, hostOS ...string) (string, error) {
 
@@ -109,7 +111,7 @@ func (c *Credentials) ObjectID(objectName, objectType string, timeout int, hostO
 
 			}
 		} else if len(hostOS) == 0 {
-			return "", errors.New("You must provide the Fileset Tempalte OS type")
+			return "", errors.New("You must provide the Fileset Template OS type")
 		}
 		objectSummaryAPIVersion = "v1"
 		objectSummaryAPIEndpoint = fmt.Sprintf("/fileset_template?primary_cluster_id=local&operating_system_type=%s&name=%s", hostOperatingSystem, objectName)
@@ -168,6 +170,7 @@ func (c *Credentials) ObjectID(objectName, objectType string, timeout int, hostO
 // use "do not protect" as the "slaName". To assign the selected object to the SLA of the next higher level object, use "clear" as the "slaName".
 //
 // The function will return one of the following:
+//
 //	No change required. The vSphere VM '{objectName}' is already assigned to the '{slaName}' SLA Domain.
 //
 //	The full API response for POST /internal/sla_domain/{slaID}/assign.
@@ -269,6 +272,7 @@ func (c *Credentials) AssignSLA(objectName, objectType, slaName string, timeout 
 // ended will be part of its snapshot.
 //
 // The function will return one of the following:
+//
 //	No change required. The Managed Volume '{name}' is already in a writeable state.
 //
 //	The full API response for POST /internal/managed_volume/{managedVolumeID}/begin_snapshot
@@ -310,6 +314,7 @@ func (c *Credentials) BeginManagedVolumeSnapshot(name string, timeout ...int) (*
 // EndManagedVolumeSnapshot closes a managed volume for writes. A snapshot will be created containing all writes since the last begin snapshot call.
 //
 // The function will return one of the following:
+//
 //	No change required. The Managed Volume '{name}' is already in a read-only state.
 //
 //	The full API response for POST /internal/managed_volume/{managedVolumeID}/end_snapshot
@@ -404,6 +409,7 @@ func (c *Credentials) GetSLAObjects(slaName, objectType string, timeout ...int) 
 // PauseSnapshot suspends all snapshot activity for the provided object. The only "objectType" current supported is vmware.
 //
 // The function will return one of the following:
+//
 //	No change required. The '{objectName}' '{objectType}' is already paused.
 //
 //	The full API response for POST /internal/vmware/vm/{vmID}
@@ -458,6 +464,7 @@ func (c *Credentials) PauseSnapshot(objectName, objectType string, timeout ...in
 // ResumeSnapshot resumes all snapshot activity for the provided object. The only "objectType" currently supported is vmware.
 //
 // The function will return one of the following:
+//
 //	No change required. The '{objectName}' '{objectType}' is currently not paused.
 //
 //	The full API response for POST /internal/vmware/vm/{vmID}
@@ -513,6 +520,7 @@ func (c *Credentials) ResumeSnapshot(objectName, objectType string, timeout ...i
 // assigned SLA Domain for the snapshot use "current" for the slaName.
 //
 // The function will return:
+//
 //	The job status URL for the on-demand Snapshot
 func (c *Credentials) OnDemandSnapshotVM(objectName, objectType, slaName string, timeout ...int) (string, error) {
 
@@ -575,6 +583,7 @@ func (c *Credentials) OnDemandSnapshotVM(objectName, objectType, slaName string,
 //	Linux and Windows
 //
 // The function will return:
+//
 //	The job status URL for the on-demand Snapshot
 func (c *Credentials) OnDemandSnapshotPhysical(hostName, slaName, fileset, hostOS string, timeout ...int) (string, error) {
 
@@ -630,12 +639,12 @@ func (c *Credentials) OnDemandSnapshotPhysical(hostName, slaName, fileset, hostO
 	config := map[string]string{}
 	config["slaId"] = slaID
 
-	apiRequeset, err := c.Post("v1", fmt.Sprintf("/fileset/%s/snapshot", filesetID), config, httpTimeout)
+	apiRequest, err := c.Post("v1", fmt.Sprintf("/fileset/%s/snapshot", filesetID), config, httpTimeout)
 	if err != nil {
 		return "", err
 	}
 
-	return apiRequeset.(map[string]interface{})["links"].([]interface{})[0].(map[string]interface{})["href"].(string), nil
+	return apiRequest.(map[string]interface{})["links"].([]interface{})[0].(map[string]interface{})["href"].(string), nil
 }
 
 func (c *Credentials) DateTimeConversion(dateTime string, timeout ...int) (string, error) {
@@ -673,6 +682,7 @@ func (c *Credentials) DateTimeConversion(dateTime string, timeout ...int) (strin
 //	Linux and Windows
 //
 // The function will return:
+//
 //	The job status URL for file download job from a fileset backup
 func (c *Credentials) RecoverFileDownload(hostName, fileset, hostOS, filePath, dateTime string, timeout ...int) (string, error) {
 	httpTimeout := httpTimeout(timeout)

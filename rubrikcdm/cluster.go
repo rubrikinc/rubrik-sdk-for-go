@@ -203,6 +203,7 @@ func (c *Credentials) ClusterBootstrapStatus(timeout ...int) (bool, error) {
 // supported "objectType"
 //
 // The function will return one of the following:
+//
 //	No change required. The End User '{endUser}' is already authorized to interact with the '{objectName}' VM.
 //
 //	The full API response for POST /internal/authorization/role/end_user
@@ -272,12 +273,13 @@ func (c *Credentials) EndUserAuthorization(objectName, endUser, objectType strin
 //
 // Valid timezone choices are:
 //
-// 	America/Anchorage, America/Araguaina, America/Barbados, America/Chicago, America/Denver, America/Los_Angeles America/Mexico_City, America/New_York,
+//	America/Anchorage, America/Araguaia, America/Barbados, America/Chicago, America/Denver, America/Los_Angeles America/Mexico_City, America/New_York,
 //	America/Noronha, America/Phoenix, America/Toronto, America/Vancouver, Asia/Bangkok, Asia/Dhaka, Asia/Dubai, Asia/Hong_Kong, Asia/Karachi, Asia/Kathmandu,
 //	Asia/Kolkata, Asia/Magadan, Asia/Singapore, Asia/Tokyo, Atlantic/Cape_Verde, Australia/Perth, Australia/Sydney, Europe/Amsterdam, Europe/Athens,
 //	Europe/London, Europe/Moscow, Pacific/Auckland, Pacific/Honolulu, Pacific/Midway, or UTC.
 //
 // The function will return one of the following:
+//
 //	No change required. The Rubrik cluster is already configured with '{timezone}' as it's timezone.
 //
 //	The full API response for POST /v1/cluster/me
@@ -357,6 +359,7 @@ func (c *Credentials) ConfigureTimezone(timezone string, timeout ...int) (*Clust
 // ConfigureNTP provides the connection information for the NTP servers used for time synchronization.
 //
 // The function will return one of the following:
+//
 //	No change required. The NTP server(s) {ntpServers} has already been added to the Rubrik cluster.
 //
 //	The full API response for POST /internal/cluster/me/ntp_server
@@ -414,6 +417,7 @@ func (c *Credentials) ConfigureNTP(ntpServers []string, timeout ...int) (*Status
 //	UDP, TCP
 //
 // The function will return one of the following:
+//
 //	No change required. The Rubrik cluster is already configured to use the syslog server '{syslogIP}' on port '{port}' using the '{protocol}' protocol.
 //
 //	The full API response for POST /internal/syslog
@@ -486,6 +490,7 @@ func (c *Credentials) ConfigureSyslog(syslogIP, protocol string, port float64, t
 // ConfigureDNSServers provides the connection information for the DNS Servers used by the Rubrik cluster.
 //
 // The function will return one of the following:
+//
 //	No change required. The Rubrik cluster is already configured with the provided DNS servers.
 //
 //	The full API response for POST /internal/cluster/me/dns_nameserver
@@ -521,6 +526,7 @@ func (c *Credentials) ConfigureDNSServers(serverIP []string, timeout ...int) (*S
 // ConfigureSearchDomain provides the connection information for the DNS search domains used by the Rubrik cluster.
 //
 // The function will return one of the following:
+//
 //	No change required. The Rubrik cluster is already configured with the provided DNS search domains.
 //
 //	The full API response for POST /internal/cluster/me/dns_search_domain
@@ -560,6 +566,7 @@ func (c *Credentials) ConfigureSearchDomain(searchDomain []string, timeout ...in
 //	NONE, SSL, and STARTTLS
 //
 // The function will return one of the following:
+//
 //	No change required. The Rubrik cluster is already configured with the provided SMTP settings.
 //
 //	The full API response for POST /internal/smtp_instance
@@ -641,6 +648,7 @@ func (c *Credentials) ConfigureSMTPSettings(hostname, fromEmail, smtpUsername, s
 // efficiently switch network traffic using Virtual Local Area Networks. The ips map should be in a {nodeName:IP} format.
 //
 // The function will return one of the following:
+//
 //	No change required. The Rubrik cluster is already configured with the provided VLAN information.
 //
 //	The full API response for POST /internal/cluster/me/vlan
@@ -692,6 +700,7 @@ func (c *Credentials) ConfigureVLAN(netmask string, vlan int, ips map[string]str
 // AddvCenter connects to the Rubrik cluster to a new vCenter instance.
 //
 // The function will return one of the following:
+//
 //	No change required. The vCenter '{vcenterIP}' has already been added to the Rubrik cluster.
 //
 //	The full API response for POST /v1/VMware/vcenter
@@ -745,6 +754,7 @@ func (c *Credentials) AddvCenter(vCenterIP, vCenterUsername, vCenterPassword str
 // AddvCenterWithCert connects to the Rubrik cluster to a new vCenter instance using a CA certificate.
 //
 // The function will return one of the following:
+//
 //	No change required. The vCenter '{vcenterIP}' has already been added to the Rubrik cluster.
 //
 //	The full API response for POST /v1/VMware/vcenter

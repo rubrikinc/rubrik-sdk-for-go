@@ -692,7 +692,7 @@ func ExampleCredentials_AzureCloudOn() {
 	applicationID := os.Getenv("AZURE_APP_ID")
 	applicationKey := os.Getenv("AZURE_APP_KEY")
 
-	directoryID := os.Getenv("AZURE_DIRECTORTY_ID")
+	directoryID := os.Getenv("AZURE_DIRECTORY_ID")
 	region := "westus2"
 	virtualNetworkID := os.Getenv("AZURE_VNET_ID")
 	subnetName := os.Getenv("AZURE_SUBNET")
