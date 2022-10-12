@@ -892,6 +892,193 @@ func (c *Credentials) Bootstrap(clusterName, adminEmail, adminPassword, manageme
 	return bootstrap, nil
 }
 
+// BootstrapCcesAws will complete the bootstrap process for a Rubrik Cloud Cluster Elastic Storage (CCES) on AWS.
+// You will also need to use Connect() with the "username" and "password" set to blank strings. The "nodeConfig" should be in a
+// {nodeName: nodeManagementIP} format. To monitor the bootstrap process and wait for the process to complete, set "waitForCompletion" to true.
+//
+// The function will return one of the following:
+//
+//	The full API response for POST /internal/cluster/me/bootstrap?request_id={requestID} (waitForCompletion is set to true)
+//
+//	The full API response for POST /internal/cluster/me/bootstrap (waitForCompletion is set to false)
+func (c *Credentials) BootstrapCcesAws(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask string, dnsSearchDomains, dnsNameServers, ntpServers []string, nodeConfig map[string]string, enableEncryption bool, bucketName string, waitForCompletion bool, timeout ...int) (interface{}, error) {
+
+	httpTimeout := httpTimeout(timeout)
+
+	// Validate that the Credentials struck only has a node ip configured.
+	if len(c.Username) != 0 {
+		return nil, errors.New("When bootstrapping a cluster the 'username' variable must be a blank string")
+	}
+
+	if len(c.Password) != 0 {
+		return nil, errors.New("When bootstrapping a cluster the 'password' variable must be a blank string")
+	}
+
+	config := map[string]interface{}{}
+	config["enableSoftwareEncryptionAtRest"] = enableEncryption
+	config["name"] = clusterName
+	config["dnsNameservers"] = dnsNameServers
+	config["dnsSearchDomains"] = dnsSearchDomains
+	config["ntpServers"] = ntpServers
+
+	config["adminUserInfo"] = map[string]string{}
+	config["adminUserInfo"].(map[string]string)["password"] = adminPassword
+	config["adminUserInfo"].(map[string]string)["emailAddress"] = adminEmail
+	config["adminUserInfo"].(map[string]string)["id"] = "admin"
+
+	config["nodeConfigs"] = map[string]interface{}{}
+	for nodeName, nodeIP := range nodeConfig {
+		config["nodeConfigs"].(map[string]interface{})[nodeName] = map[string]interface{}{}
+		config["nodeConfigs"].(map[string]interface{})[nodeName].(map[string]interface{})["managementIpConfig"] = map[string]string{}
+		config["nodeConfigs"].(map[string]interface{})[nodeName].(map[string]interface{})["managementIpConfig"].(map[string]string)["netmask"] = managementSubnetMask
+		config["nodeConfigs"].(map[string]interface{})[nodeName].(map[string]interface{})["managementIpConfig"].(map[string]string)["gateway"] = managementGateway
+		config["nodeConfigs"].(map[string]interface{})[nodeName].(map[string]interface{})["managementIpConfig"].(map[string]string)["address"] = nodeIP
+	}
+
+	config["cloudStorageLocation"] = map[string]interface{}{}
+	config["cloudStorageLocation"].(map[string]interface{})["awsStorageConfig"] = map[string]string{}
+	config["cloudStorageLocation"].(map[string]interface{})["awsStorageConfig"].(map[string]string)["bucketName"] = bucketName
+
+	fmt.Println(config)
+	fmt.Printf("%#v\n", config)
+
+	currentBootstrapStatus, err := c.ClusterBootstrapStatus(httpTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	if currentBootstrapStatus == true {
+		return "The provided Rubrik node is already bootstrapped.", nil
+	}
+	bootstrap, err := c.Post("internal", "/cluster/me/bootstrap", config, httpTimeout)
+	if err != nil {
+
+		return nil, err
+	}
+	bootstrapRequestID := bootstrap.(map[string]interface{})["id"].(float64)
+
+	if waitForCompletion {
+
+		for {
+
+			bootstrapStatus, err := c.Get("internal", fmt.Sprintf("/cluster/me/bootstrap?request_id=%v", int(bootstrapRequestID)), httpTimeout)
+			if err != nil {
+				return nil, err
+			}
+
+			switch bootstrapStatus.(map[string]interface{})["status"] {
+			case "IN_PROGRESS":
+				time.Sleep(30 * time.Second)
+			case "FAILURE":
+				return nil, fmt.Errorf("%s", bootstrapStatus.(map[string]interface{})["message"])
+			case "FAILED":
+				return nil, fmt.Errorf("%s", bootstrapStatus.(map[string]interface{})["message"])
+
+			default:
+				return bootstrapStatus, nil
+
+			}
+
+		}
+	}
+
+	return bootstrap, nil
+}
+
+// BootstrapCcesAzure will complete the bootstrap process for a Rubrik Cloud Cluster Elastic Storage (CCES) on Azure.
+// You will also need to use Connect() with the "username" and "password" set to blank strings. The "nodeConfig" should be in a
+// {nodeName: nodeManagementIP} format. To monitor the bootstrap process and wait for the process to complete, set "waitForCompletion" to true.
+//
+// The function will return one of the following:
+//
+//	The full API response for POST /internal/cluster/me/bootstrap?request_id={requestID} (waitForCompletion is set to true)
+//
+//	The full API response for POST /internal/cluster/me/bootstrap (waitForCompletion is set to false)
+func (c *Credentials) BootstrapCcesAzure(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask string, dnsSearchDomains, dnsNameServers, ntpServers []string, nodeConfig map[string]string, enableEncryption bool, connectionString string, containerName string, waitForCompletion bool, timeout ...int) (interface{}, error) {
+
+	httpTimeout := httpTimeout(timeout)
+
+	// Validate that the Credentials struck only has a node ip configured.
+	if len(c.Username) != 0 {
+		return nil, errors.New("When bootstrapping a cluster the 'username' variable must be a blank string")
+	}
+
+	if len(c.Password) != 0 {
+		return nil, errors.New("When bootstrapping a cluster the 'password' variable must be a blank string")
+	}
+
+	config := map[string]interface{}{}
+	config["enableSoftwareEncryptionAtRest"] = enableEncryption
+	config["name"] = clusterName
+	config["dnsNameservers"] = dnsNameServers
+	config["dnsSearchDomains"] = dnsSearchDomains
+	config["ntpServers"] = ntpServers
+
+	config["adminUserInfo"] = map[string]string{}
+	config["adminUserInfo"].(map[string]string)["password"] = adminPassword
+	config["adminUserInfo"].(map[string]string)["emailAddress"] = adminEmail
+	config["adminUserInfo"].(map[string]string)["id"] = "admin"
+
+	config["nodeConfigs"] = map[string]interface{}{}
+	for nodeName, nodeIP := range nodeConfig {
+		config["nodeConfigs"].(map[string]interface{})[nodeName] = map[string]interface{}{}
+		config["nodeConfigs"].(map[string]interface{})[nodeName].(map[string]interface{})["managementIpConfig"] = map[string]string{}
+		config["nodeConfigs"].(map[string]interface{})[nodeName].(map[string]interface{})["managementIpConfig"].(map[string]string)["netmask"] = managementSubnetMask
+		config["nodeConfigs"].(map[string]interface{})[nodeName].(map[string]interface{})["managementIpConfig"].(map[string]string)["gateway"] = managementGateway
+		config["nodeConfigs"].(map[string]interface{})[nodeName].(map[string]interface{})["managementIpConfig"].(map[string]string)["address"] = nodeIP
+	}
+
+	config["cloudStorageLocation"] = map[string]interface{}{}
+	config["cloudStorageLocation"].(map[string]interface{})["azureStorageConfig"] = map[string]string{}
+	config["cloudStorageLocation"].(map[string]interface{})["azureStorageConfig"].(map[string]string)["connectionString"] = connectionString
+	config["cloudStorageLocation"].(map[string]interface{})["azureStorageConfig"].(map[string]string)["containerName"] = containerName
+
+	fmt.Println(config)
+	fmt.Printf("%#v\n", config)
+
+	currentBootstrapStatus, err := c.ClusterBootstrapStatus(httpTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	if currentBootstrapStatus == true {
+		return "The provided Rubrik node is already bootstrapped.", nil
+	}
+	bootstrap, err := c.Post("internal", "/cluster/me/bootstrap", config, httpTimeout)
+	if err != nil {
+
+		return nil, err
+	}
+	bootstrapRequestID := bootstrap.(map[string]interface{})["id"].(float64)
+
+	if waitForCompletion {
+
+		for {
+
+			bootstrapStatus, err := c.Get("internal", fmt.Sprintf("/cluster/me/bootstrap?request_id=%v", int(bootstrapRequestID)), httpTimeout)
+			if err != nil {
+				return nil, err
+			}
+
+			switch bootstrapStatus.(map[string]interface{})["status"] {
+			case "IN_PROGRESS":
+				time.Sleep(30 * time.Second)
+			case "FAILURE":
+				return nil, fmt.Errorf("%s", bootstrapStatus.(map[string]interface{})["message"])
+			case "FAILED":
+				return nil, fmt.Errorf("%s", bootstrapStatus.(map[string]interface{})["message"])
+
+			default:
+				return bootstrapStatus, nil
+
+			}
+
+		}
+	}
+
+	return bootstrap, nil
+}
+
 // RegisterCluster submits the registration details for the specified Rubrik cluster. The username and password should
 // correspond to your Rubrik Support Portal account. The default timeout value is 160 seconds.
 func (c *Credentials) RegisterCluster(username, password string, timeout ...int) (interface{}, error) {
