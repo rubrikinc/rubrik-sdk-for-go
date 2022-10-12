@@ -1,5 +1,5 @@
-module github.com/rubrikinc/rubrik-sdk-for-go
+module rubrikcdm
 
-go 1.14
+go 1.19
 
-require github.com/mitchellh/mapstructure v1.3.3
+require github.com/mitchellh/mapstructure v1.5.0

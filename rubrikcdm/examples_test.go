@@ -27,12 +27,12 @@ func ExampleCredentials_ExportEC2Instance() {
 		log.Fatal(err)
 	}
 
-	instanceID := "i-0268174613c9404dc"
+	instanceID := "i-0123456789abcdefg"
 	exportInstanceName := "Go SDK"
 	instanceType := "m4.large"
 	awsRegion := "us-east-2"
-	subnetID := "subnet-0099d50dd9df9f088"
-	securityGroupID := "sg-082f435771cd7e4d1"
+	subnetID := "subnet-0123456789abcdefg"
+	securityGroupID := "sg-0123456789abcdefg"
 	dateTime := "04-09-2019 05:56 PM"
 	waitForCompletion := true
 
@@ -209,7 +209,7 @@ func ExampleCredentials_AddvCenter() {
 		log.Fatal(err)
 	}
 
-	vCenterIP := "demogosdk.lab"
+	vCenterIP := "vcsa.rubrikgosdk.lab"
 	vCenterUsername := "go"
 	vCenterPassword := "sdk"
 	vmLinking := true
@@ -226,7 +226,7 @@ func ExampleCredentials_AddvCenterWithCert() {
 		log.Fatal(err)
 	}
 
-	vCenterIP := "demogosdk.lab"
+	vCenterIP := "vcsa.rubrikgosdk.lab"
 	vCenterUsername := "go"
 	vCenterPassword := "sdk"
 	readcaCertificate, _ := ioutil.ReadFile("ca_cert")
@@ -245,9 +245,9 @@ func ExampleCredentials_ConfigureSMTPSettings() {
 		log.Fatal(err)
 	}
 
-	hostname := "smtp.GOSDK.lab"
+	hostname := "smtp.rubrikgosdk.lab"
 	port := 100
-	fromEmail := "gosdk@rubrik.com"
+	fromEmail := "gosdk@rubrikgosdk.lab"
 	username := "go"
 	password := "sdk"
 	encryption := "NONE"
@@ -264,7 +264,7 @@ func ExampleCredentials_ConfigureSearchDomain() {
 		log.Fatal(err)
 	}
 
-	searchDomains := []string{"gosdk.lab"}
+	searchDomains := []string{"rubrikgosdk.lab"}
 
 	searchDomainConfig, err := rubrik.ConfigureSearchDomain(searchDomains)
 	if err != nil {
@@ -290,27 +290,86 @@ func ExampleCredentials_ObjectID() {
 
 func ExampleCredentials_Bootstrap() {
 
-	bootstrapNode := "10.77.16.239"
+	bootstrapNode := "192.168.101.100"
 	rubrik := rubrikcdm.Connect(bootstrapNode, "", "")
 
 	clusterName := "Go-SDK"
-	adminEmail := "gosdk@rubrik.com"
+	adminEmail := "gosdk@rubrikgosdk.lab"
 	adminPassword := "RubrikGoSDK"
-	managementGateway := "10.77.16.1"
-	managementSubnetMask := "255.255.252.0"
-	dnsSearchDomain := []string{"gosdk.lab"}
-	dnsNameServers := []string{}
-	ntpServers := []string{"192.21.10.21", "192.21.10.22"}
+	managementGateway := "192.168.101.1"
+	managementSubnetMask := "255.255.255.0"
+	dnsSearchDomain := []string{"rubrikgosdk.lab"}
+	dnsNameServers := []string{"192.168.100.5", "192.168.100.6"}
+	ntpServers := []string{"192.168.100.5", "192.168.100.6"}
 	enableEncryption := true // set to false for a Cloud Cluster
 	waitForCompletion := true
 
 	nodeConfig := map[string]string{}
-	nodeConfig["RVM157S018901"] = bootstrapNode
-	nodeConfig["RVM157S018902"] = "10.77.16.56"
-	nodeConfig["RVM157S018903"] = "10.77.16.198"
-	nodeConfig["RVM157S018904"] = "10.77.16.81"
+	nodeConfig["RVM1234567890"] = bootstrapNode
+	nodeConfig["RVM1234567891"] = "192.168.101.101"
+	nodeConfig["RVM1234567892"] = "192.168.101.102"
+	nodeConfig["RVM1234567893"] = "192.168.101.103"
 
 	bootstrap, err := rubrik.Bootstrap(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask, dnsSearchDomain, dnsNameServers, ntpServers, nodeConfig, enableEncryption, waitForCompletion)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
+func ExampleCredentials_BootstrapAws() {
+
+	bootstrapNode := "192.168.102.100"
+	rubrik := rubrikcdm.Connect(bootstrapNode, "", "")
+
+	clusterName := "Go-SDK"
+	adminEmail := "gosdk@rubrikgosdk.lab"
+	adminPassword := "RubrikGoSDK"
+	managementGateway := "192.168.102.1"
+	managementSubnetMask := "255.255.255.0"
+	dnsSearchDomain := []string{"rubrikgosdk.lab"}
+	dnsNameServers := []string{"192.168.100.5", "192.168.100.6"}
+	ntpServers := []string{"192.168.100.5", "192.168.100.6"}
+	enableEncryption := false // set to false for a Cloud Cluster
+	bucketName := "s3-bucket-for-cces-aws"
+	waitForCompletion := true
+
+	nodeConfig := map[string]string{}
+	nodeConfig["CCESAWSNODE1"] = bootstrapNode
+	nodeConfig["CCESAWSNODE2"] = "192.168.102.101"
+	nodeConfig["CCESAWSNODE3"] = "192.168.102.102"
+
+	_, err := rubrik.BootstrapCcesAws(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask, dnsSearchDomain, dnsNameServers, ntpServers, nodeConfig, enableEncryption, bucketName, waitForCompletion)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
+func ExampleCredentials_BootstrapAzure() {
+
+	bootstrapNode := "192.168.103.100"
+	rubrik := rubrikcdm.Connect(bootstrapNode, "", "")
+
+	clusterName := "Go-SDK"
+	adminEmail := "gosdk@rubrikgosdk.lab"
+	adminPassword := "RubrikGoSDK"
+	managementGateway := "192.168.103.1"
+	managementSubnetMask := "255.255.255.0"
+	dnsSearchDomain := []string{"rubrikgosdk.lab"}
+	dnsNameServers := []string{"192.168.100.5", "192.168.100.6"}
+	ntpServers := []string{"192.168.100.5", "192.168.100.6"}
+	enableEncryption := false // set to false for a Cloud Cluster
+	connectionString := "DefaultEndpointsProtocol=https;AccountName=storageaccountforccesazuregosdk;AccountKey=abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890abcdefghijklm==;EndpointSuffix=core.windows.net"
+	containerName := "container-for-cces-azure-gosdk"
+	waitForCompletion := true
+
+	nodeConfig := map[string]string{}
+	nodeConfig["CCESAZURENODE1"] = bootstrapNode
+	nodeConfig["CCESAZURENODE2"] = "192.168.103.101"
+	nodeConfig["CCESAZURENODE3"] = "192.168.103.102"
+
+	_, err := rubrik.BootstrapCcesAzure(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask, dnsSearchDomain, dnsNameServers, ntpServers, nodeConfig, enableEncryption, connectionString, containerName, waitForCompletion)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -320,7 +379,7 @@ func ExampleCredentials_Bootstrap() {
 func ExampleCredentials_ConfigureDNSServers() {
 	rubrik, err := rubrikcdm.ConnectEnv()
 
-	dnsServers := []string{"192.21.10.50", "192.21.10.51"}
+	dnsServers := []string{"192.168.100.5", "192.168.100.6"}
 
 	dnsConfig, err := rubrik.ConfigureDNSServers(dnsServers)
 	if err != nil {
@@ -334,7 +393,7 @@ func ExampleCredentials_ConfigureSyslog() {
 		log.Fatal(err)
 	}
 
-	syslogIP := "192.21.11.29"
+	syslogIP := "192.168.100.7"
 	syslogProtocol := "UDP"
 	syslogPort := 514
 
@@ -350,7 +409,7 @@ func ExampleCredentials_RegisterCluster() {
 		log.Fatal(err)
 	}
 
-	support_portal_username := "gosdk@rubrik.com"
+	support_portal_username := "gosdk@rubrikgosdk.lab"
 	support_portal_password := "GoDummyPassword"
 
 	register, err := rubrik.RegisterCluster(support_portal_username, support_portal_password)
@@ -365,7 +424,7 @@ func ExampleCredentials_ConfigureNTP() {
 		log.Fatal(err)
 	}
 
-	ntpServers := []string{"192.21.10.21", "192.21.10.22"}
+	ntpServers := []string{"192.168.100.5", "192.168.100.6"}
 
 	ntp, err := rubrik.ConfigureNTP(ntpServers)
 	if err != nil {
@@ -479,9 +538,9 @@ func ExampleCredentials_AddAWSNativeAccount() {
 
 	usEast1 := map[string]string{}
 	usEast1["region"] = "us-east-1"
-	usEast1["vNetId"] = "vpc-11a44968"
-	usEast1["subnetId"] = "subnet-3ac58e06"
-	usEast1["securityGroupId"] = "sg-9ba90ee5"
+	usEast1["vNetId"] = "vpc-01234567"
+	usEast1["subnetId"] = "subnet-01234567"
+	usEast1["securityGroupId"] = "sg-01234567"
 	boltConfig := []interface{}{usEast1}
 
 	addAWSNative, err := rubrik.AddAWSNativeAccount(awsAccountName, awsAccessKey, awsSecretKey, awsRegions, boltConfig)
@@ -496,7 +555,7 @@ func ExampleCredentials_RefreshvCenter() {
 		log.Fatal(err)
 	}
 
-	vcenter_hostname := "go.demo.lab"
+	vcenter_hostname := "vcsa.rubrikgosdk.lab"
 
 	refresh, err := rubrik.RefreshvCenter(vcenter_hostname)
 	if err != nil {
@@ -650,9 +709,9 @@ func ExampleCredentials_AWSS3CloudOn() {
 	}
 
 	archiveName := "AWS:S3:GoSDK"
-	vpcID := "vpc-28e32931"
-	subnetID := "subnet-3ae87e92"
-	securityGroupID := "sg-9ba32ff8"
+	vpcID := "vpc-01234567"
+	subnetID := "subnet-01234567"
+	securityGroupID := "sg-01234567"
 
 	awsCloudOn, err := rubrik.AWSS3CloudOn(archiveName, vpcID, subnetID, securityGroupID)
 	if err != nil {
@@ -692,7 +751,7 @@ func ExampleCredentials_AzureCloudOn() {
 	applicationID := os.Getenv("AZURE_APP_ID")
 	applicationKey := os.Getenv("AZURE_APP_KEY")
 
-	directoryID := os.Getenv("AZURE_DIRECTORTY_ID")
+	directoryID := os.Getenv("AZURE_DIRECTORY_ID")
 	region := "westus2"
 	virtualNetworkID := os.Getenv("AZURE_VNET_ID")
 	subnetName := os.Getenv("AZURE_SUBNET")
@@ -711,7 +770,7 @@ func ExampleCredentials_RecoverFileDownload() {
 		log.Fatal(err)
 	}
 
-	hostName := "rubrik-sql01.hybrid-lab.local"
+	hostName := "rubrik-sql01rubrikgosdk.lab"
 	fileset := "fileset01"
 	hostOS := "Linux"
 	dateTime := "04-17-2020 12:49 PM"
