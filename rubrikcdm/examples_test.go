@@ -317,6 +317,65 @@ func ExampleCredentials_Bootstrap() {
 
 }
 
+func ExampleCredentials_BootstrapAws() {
+
+	bootstrapNode := "192.168.102.100"
+	rubrik := rubrikcdm.Connect(bootstrapNode, "", "")
+
+	clusterName := "Go-SDK"
+	adminEmail := "gosdk@rubrikgosdk.lab"
+	adminPassword := "RubrikGoSDK"
+	managementGateway := "192.168.102.1"
+	managementSubnetMask := "255.255.255.0"
+	dnsSearchDomain := []string{"rubrikgosdk.lab"}
+	dnsNameServers := []string{"192.168.100.5", "192.168.100.6"}
+	ntpServers := []string{"192.168.100.5", "192.168.100.6"}
+	enableEncryption := false // set to false for a Cloud Cluster
+	bucketName := "s3-bucket-for-cces-aws"
+	waitForCompletion := true
+
+	nodeConfig := map[string]string{}
+	nodeConfig["CCESAWSNODE1"] = bootstrapNode
+	nodeConfig["CCESAWSNODE2"] = "192.168.102.101"
+	nodeConfig["CCESAWSNODE3"] = "192.168.102.102"
+
+	_, err := rubrik.BootstrapCcesAws(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask, dnsSearchDomain, dnsNameServers, ntpServers, nodeConfig, enableEncryption, bucketName, waitForCompletion)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
+func ExampleCredentials_BootstrapAzure() {
+
+	bootstrapNode := "192.168.103.100"
+	rubrik := rubrikcdm.Connect(bootstrapNode, "", "")
+
+	clusterName := "Go-SDK"
+	adminEmail := "gosdk@rubrikgosdk.lab"
+	adminPassword := "RubrikGoSDK"
+	managementGateway := "192.168.103.1"
+	managementSubnetMask := "255.255.255.0"
+	dnsSearchDomain := []string{"rubrikgosdk.lab"}
+	dnsNameServers := []string{"192.168.100.5", "192.168.100.6"}
+	ntpServers := []string{"192.168.100.5", "192.168.100.6"}
+	enableEncryption := false // set to false for a Cloud Cluster
+	connectionString := "DefaultEndpointsProtocol=https;AccountName=storageaccountforccesazuregosdk;AccountKey=abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890abcdefghijklm==;EndpointSuffix=core.windows.net"
+	containerName := "container-for-cces-azure-gosdk"
+	waitForCompletion := true
+
+	nodeConfig := map[string]string{}
+	nodeConfig["CCESAZURENODE1"] = bootstrapNode
+	nodeConfig["CCESAZURENODE2"] = "192.168.103.101"
+	nodeConfig["CCESAZURENODE3"] = "192.168.103.102"
+
+	_, err := rubrik.BootstrapCcesAzure(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask, dnsSearchDomain, dnsNameServers, ntpServers, nodeConfig, enableEncryption, connectionString, containerName, waitForCompletion)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
 func ExampleCredentials_ConfigureDNSServers() {
 	rubrik, err := rubrikcdm.ConnectEnv()
 
