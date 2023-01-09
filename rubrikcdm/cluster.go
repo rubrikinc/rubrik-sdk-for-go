@@ -939,9 +939,6 @@ func (c *Credentials) BootstrapCcesAws(clusterName, adminEmail, adminPassword, m
 	config["cloudStorageLocation"].(map[string]interface{})["awsStorageConfig"] = map[string]string{}
 	config["cloudStorageLocation"].(map[string]interface{})["awsStorageConfig"].(map[string]string)["bucketName"] = bucketName
 
-	fmt.Println(config)
-	fmt.Printf("%#v\n", config)
-
 	currentBootstrapStatus, err := c.ClusterBootstrapStatus(httpTimeout)
 	if err != nil {
 		return nil, err
@@ -1032,9 +1029,6 @@ func (c *Credentials) BootstrapCcesAzure(clusterName, adminEmail, adminPassword,
 	config["cloudStorageLocation"].(map[string]interface{})["azureStorageConfig"] = map[string]string{}
 	config["cloudStorageLocation"].(map[string]interface{})["azureStorageConfig"].(map[string]string)["connectionString"] = connectionString
 	config["cloudStorageLocation"].(map[string]interface{})["azureStorageConfig"].(map[string]string)["containerName"] = containerName
-
-	fmt.Println(config)
-	fmt.Printf("%#v\n", config)
 
 	currentBootstrapStatus, err := c.ClusterBootstrapStatus(httpTimeout)
 	if err != nil {
