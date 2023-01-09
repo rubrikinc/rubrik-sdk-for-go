@@ -300,7 +300,48 @@ func ExampleCredentials_Bootstrap() {
 	managementSubnetMask := "255.255.255.0"
 	dnsSearchDomain := []string{"rubrikgosdk.lab"}
 	dnsNameServers := []string{"192.168.100.5", "192.168.100.6"}
-	ntpServers := []string{"192.168.100.5", "192.168.100.6"}
+	ntpServers := map[string]interface{}{}
+	ntpServers["ntpServer1"] = map[string]interface{}{}
+	ntpServers["ntpServer1"].(map[string]interface{})["IP"] = "192.168.100.5"
+	ntpServers["ntpServer2"] = map[string]interface{}{}
+	ntpServers["ntpServer2"].(map[string]interface{})["IP"] = "192.168.100.6"	enableEncryption := true // set to false for a Cloud Cluster
+	waitForCompletion := true
+
+	nodeConfig := map[string]string{}
+	nodeConfig["RVM1234567890"] = bootstrapNode
+	nodeConfig["RVM1234567891"] = "192.168.101.101"
+	nodeConfig["RVM1234567892"] = "192.168.101.102"
+	nodeConfig["RVM1234567893"] = "192.168.101.103"
+
+	bootstrap, err := rubrik.Bootstrap(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask, dnsSearchDomain, dnsNameServers, ntpServers, nodeConfig, enableEncryption, waitForCompletion)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func ExampleCredentials_Bootstrap_with_Secure_NTP() {
+
+	bootstrapNode := "192.168.101.100"
+	rubrik := rubrikcdm.Connect(bootstrapNode, "", "")
+
+	clusterName := "Go-SDK"
+	adminEmail := "gosdk@rubrikgosdk.lab"
+	adminPassword := "RubrikGoSDK"
+	managementGateway := "192.168.101.1"
+	managementSubnetMask := "255.255.255.0"
+	dnsSearchDomain := []string{"rubrikgosdk.lab"}
+	dnsNameServers := []string{"192.168.100.5", "192.168.100.6"}
+	ntpServers := map[string]interface{}{}
+	ntpServers["ntpServer1"] = map[string]interface{}{}
+	ntpServers["ntpServer1"].(map[string]interface{})["IP"] = "192.168.100.5"
+	ntpServers["ntpServer1"].(map[string]interface{})["key"] = "key-material-for-ntpserver-1"
+	ntpServers["ntpServer1"].(map[string]interface{})["keyId"] = 0
+	ntpServers["ntpServer1"].(map[string]interface{})["keyType"] = "MD5"
+	ntpServers["ntpServer2"] = map[string]interface{}{}
+	ntpServers["ntpServer2"].(map[string]interface{})["IP"] = "192.168.100.6"
+	ntpServers["ntpServer2"].(map[string]interface{})["keyId"] = 1
+	ntpServers["ntpServer2"].(map[string]interface{})["key"] = "key-material-for-ntpserver-2"
+	ntpServers["ntpServer2"].(map[string]interface{})["keyType"] = "SHA1"
 	enableEncryption := true // set to false for a Cloud Cluster
 	waitForCompletion := true
 
@@ -329,10 +370,14 @@ func ExampleCredentials_BootstrapAws() {
 	managementSubnetMask := "255.255.255.0"
 	dnsSearchDomain := []string{"rubrikgosdk.lab"}
 	dnsNameServers := []string{"192.168.100.5", "192.168.100.6"}
-	ntpServers := []string{"192.168.100.5", "192.168.100.6"}
-	enableEncryption := false // set to false for a Cloud Cluster
+	ntpServers := map[string]interface{}{}
+	ntpServers["ntpServer1"] = map[string]interface{}{}
+	ntpServers["ntpServer1"].(map[string]interface{})["IP"] = "192.168.100.5"
+	ntpServers["ntpServer2"] = map[string]interface{}{}
+	ntpServers["ntpServer2"].(map[string]interface{})["IP"] = "192.168.100.6"	
 	bucketName := "s3-bucket-for-cces-aws"
 	waitForCompletion := true
+	enableEncryption := false // set to false for a Cloud Cluster
 
 	nodeConfig := map[string]string{}
 	nodeConfig["CCESAWSNODE1"] = bootstrapNode
@@ -358,10 +403,14 @@ func ExampleCredentials_BootstrapAzure() {
 	managementSubnetMask := "255.255.255.0"
 	dnsSearchDomain := []string{"rubrikgosdk.lab"}
 	dnsNameServers := []string{"192.168.100.5", "192.168.100.6"}
-	ntpServers := []string{"192.168.100.5", "192.168.100.6"}
-	enableEncryption := false // set to false for a Cloud Cluster
+	ntpServers := map[string]interface{}{}
+	ntpServers["ntpServer1"] = map[string]interface{}{}
+	ntpServers["ntpServer1"].(map[string]interface{})["IP"] = "192.168.100.5"
+	ntpServers["ntpServer2"] = map[string]interface{}{}
+	ntpServers["ntpServer2"].(map[string]interface{})["IP"] = "192.168.100.6"
 	connectionString := "DefaultEndpointsProtocol=https;AccountName=storageaccountforccesazuregosdk;AccountKey=abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890abcdefghijklm==;EndpointSuffix=core.windows.net"
 	containerName := "container-for-cces-azure-gosdk"
+	enableEncryption := false // set to false for a Cloud Cluster
 	waitForCompletion := true
 
 	nodeConfig := map[string]string{}
@@ -418,6 +467,7 @@ func ExampleCredentials_RegisterCluster() {
 	}
 }
 
+// NOTE: This code is broken for releases of Rubrik CDM v5.0 and later.
 func ExampleCredentials_ConfigureNTP() {
 	rubrik, err := rubrikcdm.ConnectEnv()
 	if err != nil {

@@ -26,3 +26,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - `ConnectEnv()` will not look for a configured `rubrik_cdm_token` environment variable
+
+## v1.0.4
+
+### Fixed
+- Prevent potential HTTP connection issues from occurring on long-running jobs
+
+## v1.1.0
+
+### Added
+
+- `BootstrapCcesAws()` will bootstrap a Cloud Cluster Elastic Storage in AWS
+- `BootstrapCcesAzure()` will bootstrap a Cloud Cluster Elastic Storage in Azure
+
+### Fixed
+
+- `Bootstrap()` fixed NTP code so that NTP will be updated properly on newer Rubrik clusters. This is a breaking change for Rubrik clusters older than v5.0.

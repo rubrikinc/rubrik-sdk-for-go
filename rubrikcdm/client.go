@@ -177,7 +177,7 @@ func (c *Credentials) commonAPI(callType, apiVersion, apiEndpoint string, config
 
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Accept", "application/json")
-	request.Header.Set("User-Agent", "Rubrik Go SDK v1.0.2")
+	request.Header.Set("User-Agent", "Rubrik Go SDK v1.1.0")
 	request.Close = true
 
 	apiRequest, err := client.Do(request)
