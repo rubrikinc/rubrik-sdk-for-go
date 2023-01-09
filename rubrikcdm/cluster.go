@@ -815,7 +815,7 @@ func (c *Credentials) AddvCenterWithCert(vCenterIP, vCenterUsername, vCenterPass
 //	The full API response for POST /internal/cluster/me/bootstrap?request_id={requestID} (waitForCompletion is set to true)
 //
 //	The full API response for POST /internal/cluster/me/bootstrap (waitForCompletion is set to false)
-func (c *Credentials) Bootstrap(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask string, dnsSearchDomains, dnsNameServers, ntpServers []string, nodeConfig map[string]string, enableEncryption, waitForCompletion bool, timeout ...int) (interface{}, error) {
+func (c *Credentials) Bootstrap(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask string, dnsSearchDomains []string, dnsNameServers []string, ntpServers map[string]interface{}, nodeConfig map[string]string, enableEncryption, waitForCompletion bool, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -833,7 +833,30 @@ func (c *Credentials) Bootstrap(clusterName, adminEmail, adminPassword, manageme
 	config["name"] = clusterName
 	config["dnsNameservers"] = dnsNameServers
 	config["dnsSearchDomains"] = dnsSearchDomains
-	config["ntpServers"] = ntpServers
+
+	ntpServerConfigs := []interface{}{}
+	for _, ntpServer := range ntpServers {
+		server := ntpServer.(map[string]interface{})
+		ntpConfig := map[string]interface{}{}
+		if server["keyId"] != nil {
+			symmetricKey := map[string]interface{}{
+				"keyId":   server["keyId"],
+				"key":     server["key"],
+				"keyType": server["keyType"],
+			}
+			ntpConfig = map[string]interface{}{
+				"server":       server["IP"],
+				"symmetricKey": symmetricKey,
+			}
+		} else {
+			ntpConfig = map[string]interface{}{
+				"server": server["IP"],
+			}
+		}
+
+		ntpServerConfigs = append(ntpServerConfigs, ntpConfig)
+	}
+	config["ntpServerConfigs"] = ntpServerConfigs
 
 	config["adminUserInfo"] = map[string]string{}
 	config["adminUserInfo"].(map[string]string)["password"] = adminPassword
@@ -901,7 +924,7 @@ func (c *Credentials) Bootstrap(clusterName, adminEmail, adminPassword, manageme
 //	The full API response for POST /internal/cluster/me/bootstrap?request_id={requestID} (waitForCompletion is set to true)
 //
 //	The full API response for POST /internal/cluster/me/bootstrap (waitForCompletion is set to false)
-func (c *Credentials) BootstrapCcesAws(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask string, dnsSearchDomains, dnsNameServers, ntpServers []string, nodeConfig map[string]string, enableEncryption bool, bucketName string, waitForCompletion bool, timeout ...int) (interface{}, error) {
+func (c *Credentials) BootstrapCcesAws(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask string, dnsSearchDomains []string, dnsNameServers []string, ntpServers map[string]interface{}, nodeConfig map[string]string, enableEncryption bool, bucketName string, waitForCompletion bool, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -919,7 +942,30 @@ func (c *Credentials) BootstrapCcesAws(clusterName, adminEmail, adminPassword, m
 	config["name"] = clusterName
 	config["dnsNameservers"] = dnsNameServers
 	config["dnsSearchDomains"] = dnsSearchDomains
-	config["ntpServers"] = ntpServers
+
+	ntpServerConfigs := []interface{}{}
+	for _, ntpServer := range ntpServers {
+		server := ntpServer.(map[string]interface{})
+		ntpConfig := map[string]interface{}{}
+		if server["keyId"] != nil {
+			symmetricKey := map[string]interface{}{
+				"keyId":   server["keyId"],
+				"key":     server["key"],
+				"keyType": server["keyType"],
+			}
+			ntpConfig = map[string]interface{}{
+				"server":       server["IP"],
+				"symmetricKey": symmetricKey,
+			}
+		} else {
+			ntpConfig = map[string]interface{}{
+				"server": server["IP"],
+			}
+		}
+
+		ntpServerConfigs = append(ntpServerConfigs, ntpConfig)
+	}
+	config["ntpServerConfigs"] = ntpServerConfigs
 
 	config["adminUserInfo"] = map[string]string{}
 	config["adminUserInfo"].(map[string]string)["password"] = adminPassword
@@ -991,7 +1037,7 @@ func (c *Credentials) BootstrapCcesAws(clusterName, adminEmail, adminPassword, m
 //	The full API response for POST /internal/cluster/me/bootstrap?request_id={requestID} (waitForCompletion is set to true)
 //
 //	The full API response for POST /internal/cluster/me/bootstrap (waitForCompletion is set to false)
-func (c *Credentials) BootstrapCcesAzure(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask string, dnsSearchDomains, dnsNameServers, ntpServers []string, nodeConfig map[string]string, enableEncryption bool, connectionString string, containerName string, waitForCompletion bool, timeout ...int) (interface{}, error) {
+func (c *Credentials) BootstrapCcesAzure(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask string, dnsSearchDomains []string, dnsNameServers []string, ntpServers map[string]interface{}, nodeConfig map[string]string, enableEncryption bool, connectionString string, containerName string, waitForCompletion bool, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -1009,7 +1055,30 @@ func (c *Credentials) BootstrapCcesAzure(clusterName, adminEmail, adminPassword,
 	config["name"] = clusterName
 	config["dnsNameservers"] = dnsNameServers
 	config["dnsSearchDomains"] = dnsSearchDomains
-	config["ntpServers"] = ntpServers
+
+	ntpServerConfigs := []interface{}{}
+	for _, ntpServer := range ntpServers {
+		server := ntpServer.(map[string]interface{})
+		ntpConfig := map[string]interface{}{}
+		if server["keyId"] != nil {
+			symmetricKey := map[string]interface{}{
+				"keyId":   server["keyId"],
+				"key":     server["key"],
+				"keyType": server["keyType"],
+			}
+			ntpConfig = map[string]interface{}{
+				"server":       server["IP"],
+				"symmetricKey": symmetricKey,
+			}
+		} else {
+			ntpConfig = map[string]interface{}{
+				"server": server["IP"],
+			}
+		}
+
+		ntpServerConfigs = append(ntpServerConfigs, ntpConfig)
+	}
+	config["ntpServerConfigs"] = ntpServerConfigs
 
 	config["adminUserInfo"] = map[string]string{}
 	config["adminUserInfo"].(map[string]string)["password"] = adminPassword
