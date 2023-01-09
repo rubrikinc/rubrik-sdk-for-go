@@ -333,6 +333,7 @@ func ExampleCredentials_BootstrapAws() {
 	enableEncryption := false // set to false for a Cloud Cluster
 	bucketName := "s3-bucket-for-cces-aws"
 	waitForCompletion := true
+	enableEncryption := false // set to false for a Cloud Cluster
 
 	nodeConfig := map[string]string{}
 	nodeConfig["CCESAWSNODE1"] = bootstrapNode
@@ -362,6 +363,7 @@ func ExampleCredentials_BootstrapAzure() {
 	enableEncryption := false // set to false for a Cloud Cluster
 	connectionString := "DefaultEndpointsProtocol=https;AccountName=storageaccountforccesazuregosdk;AccountKey=abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890abcdefghijklm==;EndpointSuffix=core.windows.net"
 	containerName := "container-for-cces-azure-gosdk"
+	enableEncryption := false // set to false for a Cloud Cluster
 	waitForCompletion := true
 
 	nodeConfig := map[string]string{}
