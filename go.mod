@@ -1,4 +1,4 @@
-module rubrikcdm
+module github.com/rubrikinc/rubrik-sdk-for-go
 
 go 1.19
 
