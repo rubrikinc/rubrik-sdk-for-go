@@ -42,3 +42,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 
 - `Bootstrap()` fixed NTP code so that NTP will be updated properly on newer Rubrik clusters. This is a breaking change for Rubrik clusters older than v5.0.
+
+## 1.1.1
+
+### Fixed
+
+- Fixed `module declares its path as: rubrikcdm but was required as: github.com/rubrikinc/rubrik-sdk-for-go` error when calling the SDK from github.
