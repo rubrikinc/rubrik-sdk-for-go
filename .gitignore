@@ -2,6 +2,6 @@
 src/.DS_Store
 main.go
 dev.go
-
+test*.go
 # VS Code
 .vscode/
