@@ -304,7 +304,8 @@ func ExampleCredentials_Bootstrap() {
 	ntpServers["ntpServer1"] = map[string]interface{}{}
 	ntpServers["ntpServer1"].(map[string]interface{})["IP"] = "192.168.100.5"
 	ntpServers["ntpServer2"] = map[string]interface{}{}
-	ntpServers["ntpServer2"].(map[string]interface{})["IP"] = "192.168.100.6"	enableEncryption := true // set to false for a Cloud Cluster
+	ntpServers["ntpServer2"].(map[string]interface{})["IP"] = "192.168.100.6"
+	enableEncryption := true // set to false for a Cloud Cluster
 	waitForCompletion := true
 
 	nodeConfig := map[string]string{}
@@ -374,7 +375,7 @@ func ExampleCredentials_BootstrapAws() {
 	ntpServers["ntpServer1"] = map[string]interface{}{}
 	ntpServers["ntpServer1"].(map[string]interface{})["IP"] = "192.168.100.5"
 	ntpServers["ntpServer2"] = map[string]interface{}{}
-	ntpServers["ntpServer2"].(map[string]interface{})["IP"] = "192.168.100.6"	
+	ntpServers["ntpServer2"].(map[string]interface{})["IP"] = "192.168.100.6"
 	bucketName := "s3-bucket-for-cces-aws"
 	waitForCompletion := true
 	enableEncryption := false // set to false for a Cloud Cluster
