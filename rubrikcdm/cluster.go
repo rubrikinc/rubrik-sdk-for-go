@@ -924,7 +924,7 @@ func (c *Credentials) Bootstrap(clusterName, adminEmail, adminPassword, manageme
 //	The full API response for POST /internal/cluster/me/bootstrap?request_id={requestID} (waitForCompletion is set to true)
 //
 //	The full API response for POST /internal/cluster/me/bootstrap (waitForCompletion is set to false)
-func (c *Credentials) BootstrapCcesAws(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask string, dnsSearchDomains []string, dnsNameServers []string, ntpServers map[string]interface{}, nodeConfig map[string]string, enableEncryption bool, bucketName string, waitForCompletion bool, timeout ...int) (interface{}, error) {
+func (c *Credentials) BootstrapCcesAws(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask string, dnsSearchDomains []string, dnsNameServers []string, ntpServers map[string]interface{}, nodeConfig map[string]string, enableEncryption bool, bucketName string, enableImmutability bool, waitForCompletion bool, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -981,9 +981,12 @@ func (c *Credentials) BootstrapCcesAws(clusterName, adminEmail, adminPassword, m
 		config["nodeConfigs"].(map[string]interface{})[nodeName].(map[string]interface{})["managementIpConfig"].(map[string]string)["address"] = nodeIP
 	}
 
-	config["cloudStorageLocation"] = map[string]interface{}{}
-	config["cloudStorageLocation"].(map[string]interface{})["awsStorageConfig"] = map[string]string{}
-	config["cloudStorageLocation"].(map[string]interface{})["awsStorageConfig"].(map[string]string)["bucketName"] = bucketName
+	config["cloudStorageLocation"] = map[string]interface{}{
+		"awsStorageConfig": map[string]interface{}{
+			"bucketName":             bucketName,
+			"isObjectLockingEnabled": enableImmutability,
+		},
+	}
 
 	currentBootstrapStatus, err := c.ClusterBootstrapStatus(httpTimeout)
 	if err != nil {
@@ -1037,7 +1040,7 @@ func (c *Credentials) BootstrapCcesAws(clusterName, adminEmail, adminPassword, m
 //	The full API response for POST /internal/cluster/me/bootstrap?request_id={requestID} (waitForCompletion is set to true)
 //
 //	The full API response for POST /internal/cluster/me/bootstrap (waitForCompletion is set to false)
-func (c *Credentials) BootstrapCcesAzure(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask string, dnsSearchDomains []string, dnsNameServers []string, ntpServers map[string]interface{}, nodeConfig map[string]string, enableEncryption bool, connectionString string, containerName string, waitForCompletion bool, timeout ...int) (interface{}, error) {
+func (c *Credentials) BootstrapCcesAzure(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask string, dnsSearchDomains []string, dnsNameServers []string, ntpServers map[string]interface{}, nodeConfig map[string]string, enableEncryption bool, connectionString string, containerName string, enableImmutability bool, waitForCompletion bool, timeout ...int) (interface{}, error) {
 
 	httpTimeout := httpTimeout(timeout)
 
@@ -1094,10 +1097,13 @@ func (c *Credentials) BootstrapCcesAzure(clusterName, adminEmail, adminPassword,
 		config["nodeConfigs"].(map[string]interface{})[nodeName].(map[string]interface{})["managementIpConfig"].(map[string]string)["address"] = nodeIP
 	}
 
-	config["cloudStorageLocation"] = map[string]interface{}{}
-	config["cloudStorageLocation"].(map[string]interface{})["azureStorageConfig"] = map[string]string{}
-	config["cloudStorageLocation"].(map[string]interface{})["azureStorageConfig"].(map[string]string)["connectionString"] = connectionString
-	config["cloudStorageLocation"].(map[string]interface{})["azureStorageConfig"].(map[string]string)["containerName"] = containerName
+	config["cloudStorageLocation"] = map[string]interface{}{
+		"azureStorageConfig": map[string]interface{}{
+			"connectionString":                    connectionString,
+			"containerName":                       containerName,
+			"isVersionLevelImmutabilitySupported": enableImmutability,
+		},
+	}
 
 	currentBootstrapStatus, err := c.ClusterBootstrapStatus(httpTimeout)
 	if err != nil {
