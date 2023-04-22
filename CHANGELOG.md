@@ -48,3 +48,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 
 - Fixed `module declares its path as: rubrikcdm but was required as: github.com/rubrikinc/rubrik-sdk-for-go` error when calling the SDK from github.
+
+## 1.2
+
+### Added
+
+- Added support for bootstrapping CCES on AWS and Azure with the immutablity flag. 
+
+### Fixed
+
+- Fixed the exmaples file for encrpytion.
+- Fixed the .gitignore file to ignore test files.

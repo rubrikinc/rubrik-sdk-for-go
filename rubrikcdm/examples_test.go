@@ -304,7 +304,8 @@ func ExampleCredentials_Bootstrap() {
 	ntpServers["ntpServer1"] = map[string]interface{}{}
 	ntpServers["ntpServer1"].(map[string]interface{})["IP"] = "192.168.100.5"
 	ntpServers["ntpServer2"] = map[string]interface{}{}
-	ntpServers["ntpServer2"].(map[string]interface{})["IP"] = "192.168.100.6"	enableEncryption := true // set to false for a Cloud Cluster
+	ntpServers["ntpServer2"].(map[string]interface{})["IP"] = "192.168.100.6"
+	enableEncryption := true // set to false for a Cloud Cluster
 	waitForCompletion := true
 
 	nodeConfig := map[string]string{}
@@ -374,8 +375,9 @@ func ExampleCredentials_BootstrapAws() {
 	ntpServers["ntpServer1"] = map[string]interface{}{}
 	ntpServers["ntpServer1"].(map[string]interface{})["IP"] = "192.168.100.5"
 	ntpServers["ntpServer2"] = map[string]interface{}{}
-	ntpServers["ntpServer2"].(map[string]interface{})["IP"] = "192.168.100.6"	
+	ntpServers["ntpServer2"].(map[string]interface{})["IP"] = "192.168.100.6"
 	bucketName := "s3-bucket-for-cces-aws"
+	enableImmutability := true
 	waitForCompletion := true
 	enableEncryption := false // set to false for a Cloud Cluster
 
@@ -384,7 +386,7 @@ func ExampleCredentials_BootstrapAws() {
 	nodeConfig["CCESAWSNODE2"] = "192.168.102.101"
 	nodeConfig["CCESAWSNODE3"] = "192.168.102.102"
 
-	_, err := rubrik.BootstrapCcesAws(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask, dnsSearchDomain, dnsNameServers, ntpServers, nodeConfig, enableEncryption, bucketName, waitForCompletion)
+	_, err := rubrik.BootstrapCcesAws(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask, dnsSearchDomain, dnsNameServers, ntpServers, nodeConfig, enableEncryption, bucketName, enableImmutability, waitForCompletion)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -410,6 +412,7 @@ func ExampleCredentials_BootstrapAzure() {
 	ntpServers["ntpServer2"].(map[string]interface{})["IP"] = "192.168.100.6"
 	connectionString := "DefaultEndpointsProtocol=https;AccountName=storageaccountforccesazuregosdk;AccountKey=abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890abcdefghijklm==;EndpointSuffix=core.windows.net"
 	containerName := "container-for-cces-azure-gosdk"
+	enableImmutability := true
 	enableEncryption := false // set to false for a Cloud Cluster
 	waitForCompletion := true
 
@@ -418,7 +421,7 @@ func ExampleCredentials_BootstrapAzure() {
 	nodeConfig["CCESAZURENODE2"] = "192.168.103.101"
 	nodeConfig["CCESAZURENODE3"] = "192.168.103.102"
 
-	_, err := rubrik.BootstrapCcesAzure(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask, dnsSearchDomain, dnsNameServers, ntpServers, nodeConfig, enableEncryption, connectionString, containerName, waitForCompletion)
+	_, err := rubrik.BootstrapCcesAzure(clusterName, adminEmail, adminPassword, managementGateway, managementSubnetMask, dnsSearchDomain, dnsNameServers, ntpServers, nodeConfig, enableEncryption, connectionString, containerName, enableImmutability, waitForCompletion)
 	if err != nil {
 		log.Fatal(err)
 	}
