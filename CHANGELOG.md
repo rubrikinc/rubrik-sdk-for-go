@@ -53,9 +53,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- Added support for bootstrapping CCES on AWS and Azure with the immutablity flag. 
+- Added support for bootstrapping CCES on AWS and Azure with the immutability flag. 
 
 ### Fixed
 
-- Fixed the exmaples file for encrpytion.
+- Fixed the examples file for encryption.
 - Fixed the .gitignore file to ignore test files.
