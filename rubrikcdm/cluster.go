@@ -178,6 +178,10 @@ func (c *Credentials) ClusterBootstrapStatus(timeout ...int) (bool, error) {
 				if numberOfAttempts == 24 {
 					return false, err
 				}
+			} else if strings.Contains(err.Error(), "Connection refused") || strings.Contains(err.Error(), "Internal Server Error") {
+				if numberOfAttempts == 24 {
+					return false, err
+				}
 			} else if strings.Contains(err.Error(), "Unable to establish a connection") {
 
 				if numberOfAttempts == 6 {
