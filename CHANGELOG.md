@@ -59,3 +59,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Fixed the examples file for encryption.
 - Fixed the .gitignore file to ignore test files.
+
+
+## 1.2.1
+
+- Added retry on connection errors during bootstrap 
+## 1.3.0
+
+- Upgraded to Go 1.21
